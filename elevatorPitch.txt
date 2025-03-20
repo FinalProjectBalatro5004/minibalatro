@@ -1,0 +1,60 @@
+# Project Name: Mini-Balatro
+
+## Elevator Pitch
+* **Problem**: Balatro is a popular roguelike deck-building game, but it lacks online features and community interaction that modern gamers expect.
+* **Solution**: Our Mini Balatro is a JavaFX implementation that preserves the core gameplay while adding online capabilities and cloud integration.
+* **Unique Value**: Our implementation showcases advanced OOD principles through:
+  * Proper separation of concerns using MVC architecture
+  * Strategic application of design patterns (Observer for game state changes, Factory for card creation, Singleton for services)
+  * Clean interfaces and well-defined class hierarchies
+  * Comprehensive JavaDoc documentation and JUnit testing
+* **Target Audience**: Both existing Balatro fans looking for expanded features and new players who want a more connected gaming experience.
+* **Why Now**: With Balatro's recent popularity surge, there's growing demand for community features that the original game doesn't offer.
+
+## Team Members
+* Eris Xie
+* NianChao Wang
+* ZiChen Tian
+
+## Draft Class Structure
+
+### Model Classes
+* `Card` - Represents a playing card with rank and suit
+* `Deck` - Manages collection of cards with shuffling and drawing capabilities
+* `Hand` - Represents player's current hand with evaluation capabilities
+* `Joker` - Special cards providing multipliers and effects
+* `Player` - Manages player state, including score and statistics
+* `GameState` - Tracks overall game progress and round management
+* `Round` - Tracks individual round state with active multipliers
+* `Ranking` - Represents a player's position and score in leaderboards
+* `GameConfig` - Stores game rules and configuration settings
+
+### View Classes
+* `CardView` - Visual representation of playing cards
+* `JokerView` - Visual representation of joker cards
+* `GameBoardView` - Main playing area interface
+* `ScoreboardView` - Displays current score and multipliers
+* `LeaderboardView` - Shows online rankings and filters
+* `PlayerStatsView` - Displays player's jokers, chips, and resources
+* `HandSelectionView` - UI for selecting which cards to hold/discard
+* `JokerSelectionView` - UI for purchasing/selecting jokers
+* `PlayerProfileView` - Detailed view of player statistics
+
+### Controller Classes
+* `GameController` - Manages game flow and user interactions
+* `DeckController` - Handles deck-related operations
+* `HandController` - Manages hand evaluation and selection
+* `JokerController` - Manages joker acquisition and activation
+* `RankingController` - Controls ranking data flow and user interactions
+
+### Service Classes
+* `GameService` - Core game mechanics and rules
+* `ScoreService` - Calculates and tracks in-game scores
+* `UserService` - Manages user profiles and account data
+* `AuthService` - Handles authentication flows with AWS Cognito
+* `RankingService` - Manages leaderboards and periodic refreshes
+* `StatisticsService` - Collects and processes player statistics
+* `StorageService` - Handles local and cloud data persistence
+* `NetworkService` - Provides abstraction for API calls and real-time communication
+
+
