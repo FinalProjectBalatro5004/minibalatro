@@ -1,0 +1,305 @@
+/* Main game styles */
+
+.root {
+    -fx-background-color: #1a1e23;
+    -fx-font-family: 'Arial';
+    -fx-background-color: linear-gradient(from 0% 0% to 0% 100%, #1a2638, #2b1e33);
+}
+
+/* Game title */
+.game-title {
+    -fx-font-size: 36px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #ffd700;
+    -fx-padding: 15px 0;
+    -fx-effect: dropshadow(gaussian, rgba(255,215,0,0.6), 10, 0, 0, 0);
+}
+
+/* Game info panel */
+.game-info-panel {
+    -fx-background-color: linear-gradient(to right, #1d2f42, #243142);
+    -fx-background-radius: 8px;
+    -fx-padding: 10px;
+    -fx-spacing: 10px;
+    -fx-fit-to-width: true;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.4), 10, 0, 0, 5);
+}
+
+/* Info labels */
+.info-label {
+    -fx-text-fill: #ffffff;
+    -fx-font-size: 13px;
+}
+
+/* Card areas with responsive styling */
+.card-area {
+    -fx-padding: 10px;
+    -fx-spacing: 8px;
+    -fx-alignment: center;
+    -fx-fit-to-width: true;
+    -fx-min-height: 150px;
+    -fx-pref-height: 170px;
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+    -fx-background-color: rgba(30, 40, 55, 0.7);
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.3), 8, 0, 0, 3);
+}
+
+.selected-cards-area {
+    -fx-background-color: linear-gradient(to right, #2a3f4d, #324a5b);
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+    -fx-padding: 10px;
+    -fx-spacing: 8px;
+    -fx-min-height: 150px;
+    -fx-pref-height: 170px;
+    -fx-border-color: rgba(100, 180, 255, 0.3);
+    -fx-border-width: 1px;
+}
+
+.discard-pile-area {
+    -fx-background-color: linear-gradient(to right, #3a2f3d, #44374a);
+    -fx-background-radius: 8px;
+    -fx-border-radius: 8px;
+    -fx-padding: 10px;
+    -fx-spacing: 8px;
+    -fx-min-height: 170px;
+    -fx-pref-height: 200px;
+    -fx-border-color: rgba(180, 100, 180, 0.3);
+    -fx-border-width: 1px;
+}
+
+/* Area titles */
+.area-title {
+    -fx-text-fill: #e0e0e0;
+    -fx-font-weight: bold;
+    -fx-font-size: 16px;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 2, 0, 1, 1);
+    -fx-padding: 3px 0;
+}
+
+/* Buttons */
+.action-button {
+    -fx-background-color: linear-gradient(to bottom, #5889b7, #4a7ba7);
+    -fx-text-fill: white;
+    -fx-font-size: 14px;
+    -fx-min-width: 120px;
+    -fx-min-height: 40px;
+    -fx-padding: 8px 12px;
+    -fx-background-radius: 5px;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.3), 5, 0, 0, 2);
+    -fx-cursor: hand;
+    -fx-transition: all 0.2s ease;
+}
+
+.action-button:hover {
+    -fx-background-color: linear-gradient(to bottom, #689dcf, #5889b7);
+    -fx-effect: dropshadow(three-pass-box, rgba(255,255,255,0.6), 8, 0, 0, 0);
+    -fx-scale-x: 1.05;
+    -fx-scale-y: 1.05;
+}
+
+.action-button:pressed {
+    -fx-background-color: linear-gradient(to bottom, #4a7ba7, #406a91);
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.3), 3, 0, 0, 1);
+    -fx-scale-x: 0.98;
+    -fx-scale-y: 0.98;
+}
+
+.action-button:disabled {
+    -fx-opacity: 0.5;
+    -fx-cursor: default;
+    -fx-scale-x: 1.0;
+    -fx-scale-y: 1.0;
+}
+
+.draw-button {
+    -fx-background-color: linear-gradient(to bottom, #5889b7, #4a7ba7);
+}
+
+.play-button {
+    -fx-background-color: linear-gradient(to bottom, #79a95b, #6a994e);
+}
+
+.play-button:hover {
+    -fx-background-color: linear-gradient(to bottom, #89bf69, #79a95b);
+}
+
+.play-button:pressed {
+    -fx-background-color: linear-gradient(to bottom, #6a994e, #5b8a44);
+}
+
+.discard-button {
+    -fx-background-color: linear-gradient(to bottom, #cc595f, #bc4b51);
+}
+
+.discard-button:hover {
+    -fx-background-color: linear-gradient(to bottom, #d96e74, #cc595f);
+}
+
+.discard-button:pressed {
+    -fx-background-color: linear-gradient(to bottom, #bc4b51, #a94147);
+}
+
+.next-round-button {
+    -fx-background-color: linear-gradient(to bottom, #f5b072, #f4a261);
+}
+
+.next-round-button:hover {
+    -fx-background-color: linear-gradient(to bottom, #f7c595, #f5b072);
+}
+
+.next-round-button:pressed {
+    -fx-background-color: linear-gradient(to bottom, #f4a261, #e09154);
+}
+
+.start-button, .ante-button {
+    -fx-background-color: linear-gradient(to bottom, #5aba60, #4CAF50);
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+    -fx-min-width: 180px;
+    -fx-min-height: 50px;
+    -fx-cursor: hand;
+    -fx-background-radius: 6px;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.3), 8, 0, 0, 3);
+    -fx-transition: all 0.2s ease;
+}
+
+.start-button:hover, .ante-button:hover {
+    -fx-background-color: linear-gradient(to bottom, #6bcc72, #5aba60);
+    -fx-effect: dropshadow(three-pass-box, rgba(255,255,255,0.6), 10, 0, 0, 0);
+    -fx-scale-x: 1.05;
+    -fx-scale-y: 1.05;
+}
+
+.start-button:pressed, .ante-button:pressed {
+    -fx-background-color: linear-gradient(to bottom, #4CAF50, #429b47);
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.3), 3, 0, 0, 1);
+    -fx-scale-x: 0.98;
+    -fx-scale-y: 0.98;
+}
+
+.ante-button {
+    -fx-background-color: linear-gradient(to bottom, #5889b7, #4a7ba7);
+    -fx-min-width: 120px;
+}
+
+.ante-button:hover {
+    -fx-background-color: linear-gradient(to bottom, #689dcf, #5889b7);
+}
+
+.ante-button:pressed {
+    -fx-background-color: linear-gradient(to bottom, #4a7ba7, #406a91);
+}
+
+/* Welcome screen */
+.welcome-screen {
+    -fx-alignment: center;
+    -fx-spacing: 25px;
+    -fx-padding: 40px;
+    -fx-background-color: linear-gradient(from 0% 0% to 0% 100%, #1a2638, #2b1e33);
+}
+
+.welcome-label {
+    -fx-font-size: 42px;
+    -fx-text-fill: #ffd700;
+    -fx-font-weight: bold;
+    -fx-effect: dropshadow(gaussian, rgba(255,215,0,0.5), 10, 0, 0, 0);
+}
+
+.info-text {
+    -fx-font-size: 15px;
+    -fx-text-fill: #e0e0e0;
+    -fx-max-width: 550px;
+    -fx-text-alignment: center;
+    -fx-background-color: rgba(0, 0, 0, 0.2);
+    -fx-background-radius: 5px;
+    -fx-padding: 12px;
+}
+
+/* Value labels */
+.chips-value {
+    -fx-text-fill: #4aff4a;
+    -fx-font-weight: bold;
+}
+
+.ante-value {
+    -fx-text-fill: #ff6b6b;
+    -fx-font-weight: bold;
+}
+
+.target-score {
+    -fx-text-fill: #ffd700;
+    -fx-font-weight: bold;
+}
+
+.deck-size {
+    -fx-text-fill: #87ceeb;
+    -fx-font-weight: bold;
+}
+
+.limit-label {
+    -fx-text-fill: #ffa500;
+    -fx-font-weight: bold;
+}
+
+/* Card styles (applied in CardView) */
+.card {
+    -fx-background-color: white;
+    -fx-background-radius: 10px;
+    -fx-effect: dropshadow(three-pass-box, rgba(0,0,0,0.4), 8, 0, 0, 2);
+    -fx-transition: all 0.2s ease;
+}
+
+.card:hover {
+    -fx-effect: dropshadow(three-pass-box, rgba(255,215,0,0.6), 12, 0, 0, 3);
+    -fx-cursor: hand;
+    -fx-scale-x: 1.05;
+    -fx-scale-y: 1.05;
+    -fx-translate-y: -5;
+}
+
+.card-selected {
+    -fx-effect: dropshadow(three-pass-box, rgba(0,255,0,0.6), 12, 0, 0, 3);
+    -fx-border-color: #00ff00;
+    -fx-border-width: 2;
+    -fx-border-radius: 10px;
+}
+
+/* Add card scroll pane styles */
+.card-scroll-pane {
+    -fx-background-color: transparent;
+    -fx-border-color: #2B3B54;
+    -fx-border-width: 1px;
+    -fx-border-radius: 5px;
+    -fx-padding: 5px;
+}
+
+.card-scroll-pane > .viewport {
+    -fx-background-color: transparent;
+}
+
+.card-scroll-pane .scroll-bar:horizontal {
+    -fx-background-color: #1A2638;
+    -fx-background-radius: 0 0 5 5;
+}
+
+.card-scroll-pane .scroll-bar:horizontal .thumb {
+    -fx-background-color: #4664A0;
+    -fx-background-radius: 5px;
+}
+
+.card-scroll-pane .scroll-bar:horizontal .track {
+    -fx-background-color: #2B3B54;
+}
+
+.card-scroll-pane .scroll-bar:horizontal .increment-button,
+.card-scroll-pane .scroll-bar:horizontal .decrement-button {
+    -fx-background-color: #2B3B54;
+    -fx-padding: 0 5 0 5;
+}
+
+.card-scroll-pane .scroll-bar:horizontal .increment-arrow,
+.card-scroll-pane .scroll-bar:horizontal .decrement-arrow {
+    -fx-background-color: #4664A0;
+} 
