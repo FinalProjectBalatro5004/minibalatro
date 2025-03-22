@@ -65,6 +65,7 @@ public class Deck {
                     default -> Integer.parseInt(rank);  // Number cards are worth their number
                 };
                 
+                // Create the card and add it to the deck
                 deck[index] = new Card(suit, rank, value);
                 index++;
             }
@@ -92,15 +93,41 @@ public class Deck {
      */
     public void shuffle() {
         if (!isNewRound) {
-            throw new IllegalStateException("Cannot shuffle deck during an ongoing round");
+            // Force reset the deck if we need to shuffle during an ongoing round
+            resetDeck();
+            isNewRound = true;
         }
         
+        // First, use Fisher-Yates algorithm for general shuffling
         for (int i = cards.size() - 1; i > 0; i--) {
             int index = random.nextInt(i + 1);
             Card temp = cards.get(index);
             cards.set(index, cards.get(i));
             cards.set(i, temp);
         }
+        
+        // Extra shuffling to ensure better distribution
+        for (int i = 0; i < 3; i++) {
+            // Cut the deck
+            int cutPoint = cards.size() / 2 + random.nextInt(5) - 2; // Cut near middle with some variance
+            List<Card> topHalf = new ArrayList<>(cards.subList(0, cutPoint));
+            List<Card> bottomHalf = new ArrayList<>(cards.subList(cutPoint, cards.size()));
+            
+            // Riffle shuffle the halves
+            cards.clear();
+            int topIndex = 0, bottomIndex = 0;
+            while (topIndex < topHalf.size() || bottomIndex < bottomHalf.size()) {
+                // Add from bottom half
+                if (bottomIndex < bottomHalf.size()) {
+                    cards.add(bottomHalf.get(bottomIndex++));
+                }
+                // Add from top half
+                if (topIndex < topHalf.size()) {
+                    cards.add(topHalf.get(topIndex++));
+                }
+            }
+        }
+        
         isNewRound = false;  // Mark round as started after shuffle
     }
 
@@ -206,5 +233,24 @@ public class Deck {
      */
     public List<Card> getCards() {
         return new ArrayList<>(cards);
+    }
+
+    /**
+     * Gets the mutable list of cards in the deck.
+     * This is for internal use only to directly modify the deck.
+     *
+     * @return the mutable list of cards
+     */
+    public List<Card> getMutableCards() {
+        return cards;
+    }
+
+    /**
+     * Checks if the deck is in a new round state.
+     * 
+     * @return true if the deck is in a new round state
+     */
+    public boolean isNewRound() {
+        return isNewRound;
     }
 } 

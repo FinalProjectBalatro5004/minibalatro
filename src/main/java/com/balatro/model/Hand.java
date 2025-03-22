@@ -105,6 +105,24 @@ public class Hand {
             addCard(card);
         }
     }
+    
+    /**
+     * Initializes the hand with a set of cards at the beginning of the game.
+     * This method bypasses the discard restrictions since it's used for initial setup.
+     * 
+     * @param initialCards the list of initial cards to add to the hand
+     * @throws IllegalArgumentException if the number of cards exceeds MAX_CARDS
+     */
+    public void initializeHand(List<Card> initialCards) {
+        if (initialCards.size() > MAX_CARDS) {
+            throw new IllegalArgumentException("Cannot add more than " + MAX_CARDS + " cards to hand");
+        }
+        
+        for (Card card : initialCards) {
+            cards.add(card);
+        }
+        evaluateHand();
+    }
 
     /**
      * Gets the minimum number of cards that must be played
@@ -205,10 +223,16 @@ public class Hand {
      * @return an unmodifiable view of the cards
      */
     public List<Card> getCards() {
-        if (!isValidHand()) {
-            throw new IllegalStateException("Hand is not valid - must have at least " + MIN_CARDS + " card");
-        }
+        // Allow access to the cards even if empty
         return Collections.unmodifiableList(cards);
+    }
+    
+    /**
+     * Gets the mutable list of cards (for initialization purposes only)
+     * @return the mutable list of cards
+     */
+    public List<Card> getMutableCards() {
+        return cards;
     }
     
     /**
@@ -248,14 +272,24 @@ public class Hand {
     }
 
     /**
-     * Gets the total score for this hand (sum of all card values)
+     * Gets the total score for this hand based on Balatro scoring rules:
+     * 1. Add the hand type base score (e.g., 35 for Flush)
+     * 2. Add the sum of all card values (A=11, K/Q/J=10, others=face value)
+     * 3. Multiply the combined total by the hand type multiplier
      * 
      * @return the total score
      */
     public int getTotalScore() {
-        return cards.stream()
-                   .mapToInt(Card::getValue)
+        // Calculate the sum of all card values using point values (not rank values)
+        int cardValuesSum = cards.stream()
+                   .mapToInt(card -> getPointValue(card.getRank()))
                    .sum();
+        
+        // Add the hand type base score to the card values sum
+        int combinedScore = baseScore + cardValuesSum;
+        
+        // Multiply by the hand type multiplier
+        return combinedScore * multiplier;
     }
     
     /**
@@ -263,22 +297,23 @@ public class Hand {
      * the type of hand is determined by the highest value of highest HandType 
      */
     public void evaluateHand() {
-        if (cards.size() < 5) {
+        // Modified logic to allow special combinations even with fewer than 5 cards
+        if (cards.isEmpty()) {
             handType = HandType.HIGH_CARD;
             baseScore = calculateHighCardScore();
             multiplier = handType.getMultiplier();
             return;
         }
         
-        if (isStraightFlush()) {
+        if (cards.size() >= 5 && isStraightFlush()) {
             handType = HandType.STRAIGHT_FLUSH;
         } else if (isFourOfAKind()) {
             handType = HandType.FOUR_OF_A_KIND;
-        } else if (isFullHouse()) {
+        } else if (cards.size() >= 5 && isFullHouse()) {
             handType = HandType.FULL_HOUSE;
-        } else if (isFlush()) {
+        } else if (cards.size() >= 5 && isFlush()) {
             handType = HandType.FLUSH;
-        } else if (isStraight()) {
+        } else if (cards.size() >= 5 && isStraight()) {
             handType = HandType.STRAIGHT;
         } else if (isThreeOfAKind()) {
             handType = HandType.THREE_OF_A_KIND;
@@ -347,7 +382,12 @@ public class Hand {
         for (int i = 0; i < sortedCards.size() - 1; i++) {
             int current = getRankValue(sortedCards.get(i).getRank());
             int next = getRankValue(sortedCards.get(i + 1).getRank());
+            
+            // Check if ranks are sequential
+            // For a 5-card straight, we're checking 4 pairs of consecutive cards
             if (next - current != 1) {
+                // Special case for A-10-J-Q-K straight where A can be low (1) or high (14)
+                // But this would require rethinking our ranking system, so we'll leave it for now
                 return false;
             }
         }
@@ -388,33 +428,44 @@ public class Hand {
     
     /**
      * Calculates the score for a high card hand
-     * cards.stream() is used to get the highest value card in the hand
-     * .mapToInt(Card::getValue) is used to get the value of the card
-     * .max() is used to get the highest value card
-     * .orElse(0) is used to return 0 if the hand is empty
+     * Find the highest point value card in the hand
      * @return the score for a high card hand
      */
     private int calculateHighCardScore() {
         return cards.stream()
-                .mapToInt(Card::getValue)
+                .mapToInt(card -> getPointValue(card.getRank()))
                 .max()
                 .orElse(0);
     }
     
     /**
-     * Gets the numerical value of a card rank
-     * switch statement is used to get the value of the card
-     * case "A": is used to return 11 if the card is an ace
-     * case "K": is used to return 10 if the card is a king
-     * case "Q": is used to return 10 if the card is a queen
-     * case "J": is used to return 10 if the card is a jack
-     * default: is used to return the value of the card if it is not an ace, king, queen, or jack
-     * @return the value of the card
+     * Gets the numerical value of a card rank for straight evaluation
+     * Returns the proper sequence values to detect straights:
+     * 2=2, 3=3, 4=4, 5=5, 6=6, 7=7, 8=8, 9=9, 10=10, J=11, Q=12, K=13, A=14
+     * @param rank the card rank
+     * @return the sequential value for straight detection
      */
     private int getRankValue(String rank) {
         return switch (rank) {
-            case "A" -> 11;  // Ace is worth 11
-            case "J", "Q", "K" -> 10;  // Face cards are worth 10
+            case "A" -> 14;  // Ace is highest (could be 1 or 14 but we use 14 for now)
+            case "K" -> 13;
+            case "Q" -> 12;
+            case "J" -> 11;
+            case "10" -> 10;
+            default -> Integer.parseInt(rank);  // Number cards are worth their number
+        };
+    }
+    
+    /**
+     * Gets the point value of a card for scoring purposes
+     * A=11, K/Q/J=10, others=face value
+     * @param rank the card rank
+     * @return the point value
+     */
+    private int getPointValue(String rank) {
+        return switch (rank) {
+            case "A" -> 11;  // Ace is worth 11 points
+            case "K", "Q", "J" -> 10;  // Face cards are worth 10 points
             default -> Integer.parseInt(rank);  // Number cards are worth their number
         };
     }

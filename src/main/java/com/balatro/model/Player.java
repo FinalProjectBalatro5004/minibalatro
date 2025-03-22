@@ -13,6 +13,7 @@ public class Player {
     private List<Card> hand;
     private int score;
     private boolean isActive;
+    private int chips;
 
     /**
      * Creates a new player with the specified username.
@@ -25,6 +26,7 @@ public class Player {
         this.hand = new ArrayList<>();
         this.score = 0;
         this.isActive = true;
+        this.chips = 0;
     }
 
     /**
@@ -134,6 +136,29 @@ public class Player {
         return hand.size();
     }
 
+    /**
+     * Gets the player's chips.
+     *
+     * @return the number of chips
+     */
+    public int getChips() {
+        return chips;
+    }
+
+    /**
+     * Sets the player's chips.
+     *
+     * @param chips the number of chips to set
+     */
+    public void setChips(int chips) {
+        this.chips = chips;
+    }
+
+    /**
+     * Returns a string representation of the player.   
+     *
+     * @return a string representation of the player
+     */
     @Override
     public String toString() {
         return "Player{" +
@@ -141,6 +166,7 @@ public class Player {
                 ", handSize=" + hand.size() +
                 ", score=" + score +
                 ", active=" + isActive +
+                ", chips=" + chips +
                 '}';
     }
 }
