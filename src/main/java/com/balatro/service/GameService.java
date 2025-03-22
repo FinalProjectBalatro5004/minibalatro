@@ -36,6 +36,7 @@ public class GameService {
     private final BooleanProperty canDrawCards;
     private final IntegerProperty cardsToDrawCount;
     private final BooleanProperty roundCompleted;
+    private final IntegerProperty remainingCards;
 
     /**
      * Represents the current state of the game.
@@ -65,26 +66,38 @@ public class GameService {
         this.canDrawCards = new SimpleBooleanProperty(false);
         this.cardsToDrawCount = new SimpleIntegerProperty(0);
         this.roundCompleted = new SimpleBooleanProperty(false);
+        this.remainingCards = new SimpleIntegerProperty(deck.getCardCount());
         
         // Initialize the game
         initializeGame();
     }
 
     /**
-     * Initializes a new game.
+     * Initializes the game state.
      */
     private void initializeGame() {
+        // Reset the deck but don't shuffle it yet (we'll do that when starting a round)
         deck.resetDeck();
-        deck.shuffle();
-        playerHand.drawNewCards(new ArrayList<>()); // Clear the hand
-        discardPile.clear();
-        selectedCards.clear();
+        
+        // Force the deck to be in a new round state
+        deck.startNewRound(0);
+        
+        // Reset all properties
         score.set(0);
         round.set(1);
+        targetScore.set(100);  // Initial target: 100 points
+        
+        // Initial game state
+        gameState.set(GameState.WAITING_FOR_SELECTION);
+        roundCompleted.set(false);
         canDrawCards.set(false);
         cardsToDrawCount.set(0);
-        roundCompleted.set(false);
-        dealInitialHand();
+        
+        // Clear the player's hand (using the mutable access method)
+        playerHand.getMutableCards().clear();
+        
+        // Update remaining cards property
+        updateRemainingCards();
     }
 
     /**
@@ -92,18 +105,53 @@ public class GameService {
      * In Balatro, players start with 8 cards.
      */
     private void dealInitialHand() {
-        // Deal 8 cards to the player
+        // Clear any existing cards in the hand
+        playerHand.getMutableCards().clear();
+        
+        // Reset and shuffle the deck
+        deck.resetDeck();
+        deck.shuffle();
+        
+        // Get a copy of all the shuffled cards
+        List<Card> allCards = new ArrayList<>(deck.getCards());
+        
+        // Clear the deck
+        deck.getMutableCards().clear();
+        
+        // Create a diverse hand with cards of different suits and ranks
         List<Card> initialCards = new ArrayList<>();
         
-        // In Balatro, we need to maintain exactly 8 cards
-        // Since we're starting with 0 kept cards, we need to "discard" 8 cards
-        // and draw 8 new ones
-        List<Card> emptyList = new ArrayList<>();
-        Deck newDeck = deck.drawCard(8, emptyList);
+        // We want to ensure a diverse hand (different suits and ranks)
+        // Pull cards from the shuffled deck until we have 8 cards of sufficient diversity
+        for (int i = 0; i < allCards.size() && initialCards.size() < 8; i++) {
+            Card candidate = allCards.get(i);
+            
+            // Check if this card's rank and suit combination is already in our hand
+            boolean isDuplicate = false;
+            for (Card existingCard : initialCards) {
+                if (existingCard.getRank().equals(candidate.getRank()) && 
+                    existingCard.getSuit().equals(candidate.getSuit())) {
+                    isDuplicate = true;
+                    break;
+                }
+            }
+            
+            // If it's not a duplicate, add it to our hand
+            if (!isDuplicate) {
+                initialCards.add(candidate);
+            }
+        }
         
-        if (newDeck != null) {
-            initialCards.addAll(newDeck.getCards());
-            playerHand.drawNewCards(initialCards);
+        // Put the remaining cards back in the deck
+        for (Card card : allCards) {
+            if (!initialCards.contains(card)) {
+                deck.getMutableCards().add(card);
+            }
+        }
+        
+        // Initialize the player's hand with these cards
+        if (!initialCards.isEmpty()) {
+            playerHand.initializeHand(initialCards);
             updateCurrentHandTypeDisplay();
         }
     }
@@ -114,7 +162,13 @@ public class GameService {
      * @return true if the card was successfully selected
      */
     public boolean selectCard(Card card) {
+        // Check if the card is in the player's hand and not already selected
         if (playerHand.getCards().contains(card) && !selectedCards.contains(card)) {
+            // Check if we've already selected the maximum number of cards (5)
+            if (selectedCards.size() >= Hand.getMaxCardsToPlay()) {
+                return false;
+            }
+            
             selectedCards.add(card);
             updateCurrentHandTypeDisplay();
             return true;
@@ -150,16 +204,29 @@ public class GameService {
             tempHand.addCard(card);
         }
         
-        // Get the hand type and display it
+        // Get the hand type and scores
         HandType handType = tempHand.getHandType();
         int baseScore = tempHand.getBaseScore();
         int multiplier = tempHand.getMultiplier();
-        int totalValue = tempHand.getTotalScore();
         
+        // Calculate the sum of card values separately
+        int cardValuesSum = selectedCards.stream()
+                           .mapToInt(Card::getValue)
+                           .sum();
+        
+        // Calculate the combined base score (hand type base + card values)
+        int combinedBaseScore = baseScore + cardValuesSum;
+        
+        // Calculate the total score
+        int totalScore = combinedBaseScore * multiplier;
+        
+        // Display the hand type and score breakdown
         currentHandTypeDisplay.set(handType.getDisplayName() + 
-                                  " (Base: " + baseScore + 
-                                  " × Mult: " + multiplier + 
-                                  " = " + totalValue + ")");
+                                  " (Hand: " + baseScore + 
+                                  " + Cards: " + cardValuesSum +
+                                  " = " + combinedBaseScore +
+                                  ") × Mult: " + multiplier + 
+                                  " = " + totalScore);
     }
 
     /**
@@ -196,6 +263,9 @@ public class GameService {
             // Update the display
             updateCurrentHandTypeDisplay();
             
+            // Update remaining cards count
+            updateRemainingCards();
+            
             gameState.set(GameState.WAITING_FOR_DRAW);
             return true;
         }
@@ -220,27 +290,20 @@ public class GameService {
         int cardsToDraw = cardsToDrawCount.get();
         List<Card> drawnCards = new ArrayList<>();
         
-        // In Balatro, we need to maintain exactly 8 cards
-        // Get the current cards in hand (these are the kept cards)
-        List<Card> keptCards = new ArrayList<>(playerHand.getCards());
-        
-        // Draw the specified number of cards
-        Deck newDeck = deck.drawCard(cardsToDraw, keptCards);
-        
-        if (newDeck != null) {
-            // Get all cards from the new deck
-            List<Card> allCards = newDeck.getCards();
-            
-            // The drawn cards are the ones not in the kept cards
-            for (Card card : allCards) {
-                if (!keptCards.contains(card)) {
-                    drawnCards.add(card);
-                }
+        // Draw cards directly from the deck
+        for (int i = 0; i < cardsToDraw; i++) {
+            if (deck.getCards().isEmpty()) {
+                break;
             }
-            
-            // Clear the hand and add all cards from the new deck
-            playerHand.drawNewCards(new ArrayList<>()); // Clear the hand
-            playerHand.drawNewCards(allCards);
+            Card drawnCard = deck.getMutableCards().remove(0);
+            drawnCards.add(drawnCard);
+        }
+        
+        // Add the drawn cards to the player's hand
+        if (!drawnCards.isEmpty()) {
+            for (Card card : drawnCards) {
+                playerHand.addCard(card);
+            }
         }
         
         // Reset the draw state
@@ -249,6 +312,9 @@ public class GameService {
         
         // Update the display
         updateCurrentHandTypeDisplay();
+        
+        // Update remaining cards count
+        updateRemainingCards();
         
         gameState.set(GameState.WAITING_FOR_SELECTION);
         return drawnCards;
@@ -277,27 +343,37 @@ public class GameService {
         int handScore = tempHand.getTotalScore();
         score.set(score.get() + handScore);
         
-        // Check if the round is complete
+        // Store how many cards we need to draw as replacements
+        int cardsToReplace = selectedCards.size();
+        
+        // Remove played cards from hand and add to discard pile
+        List<Card> cardsToDiscard = new ArrayList<>(selectedCards);
+        playerHand.discardCards(cardsToDiscard);
+        discardPile.addAll(cardsToDiscard);
+        
+        // Clear the selection
+        selectedCards.clear();
+        
+        // Update the display
+        updateCurrentHandTypeDisplay();
+        
+        // Update remaining cards count
+        updateRemainingCards();
+        
+        // Check if the round is complete - only when score reaches or exceeds target score
         if (score.get() >= targetScore.get()) {
             roundCompleted.set(true);
             gameState.set(GameState.ROUND_COMPLETE);
         } else {
-            // Remove played cards from hand and add to discard pile
-            List<Card> cardsToDiscard = new ArrayList<>(selectedCards);
-            playerHand.discardCards(cardsToDiscard);
-            discardPile.addAll(cardsToDiscard);
-            
-            // Clear the selection
-            selectedCards.clear();
-            
-            // Update the display
-            updateCurrentHandTypeDisplay();
+            // Set up to draw replacement cards 
+            cardsToDrawCount.set(cardsToReplace);
+            canDrawCards.set(true);
             
             // Check if the game is over
             if (deck.isEmpty() && playerHand.getCardCount() < Hand.getMinCardsToPlay()) {
                 gameState.set(GameState.GAME_OVER);
             } else {
-                gameState.set(GameState.WAITING_FOR_SELECTION);
+                gameState.set(GameState.WAITING_FOR_DRAW);
             }
         }
         
@@ -305,39 +381,23 @@ public class GameService {
     }
 
     /**
-     * Starts a new round if the player has completed the current round.
-     * @return true if a new round was started
+     * Starts a new round with a fresh deck and hand.
      */
-    public boolean startNewRound() {
-        if (!roundCompleted.get()) {
-            return false;
-        }
-        
-        // Increment the round
-        round.set(round.get() + 1);
-        
-        // Increase the target score for the next round
-        targetScore.set(targetScore.get() * 2);
-        
-        // Reset the deck and shuffle
-        deck.resetDeck();
-        deck.shuffle();
-        
-        // Clear the player's hand and discard pile
-        playerHand.drawNewCards(new ArrayList<>()); // Clear the hand
-        discardPile.clear();
-        selectedCards.clear();
-        
-        // Reset round state
-        roundCompleted.set(false);
-        canDrawCards.set(false);
-        cardsToDrawCount.set(0);
-        
-        // Deal a new hand
+    public void startNewRound() {
+        // Reset everything for the new round
         dealInitialHand();
         
+        // Reset game state
         gameState.set(GameState.WAITING_FOR_SELECTION);
-        return true;
+        
+        // Clear the discard pile
+        discardPile.clear();
+        
+        // Clear any selected cards
+        selectedCards.clear();
+        
+        // Update remaining cards property
+        updateRemainingCards();
     }
 
     /**
@@ -514,5 +574,48 @@ public class GameService {
      */
     public boolean isGameOver() {
         return gameState.get() == GameState.GAME_OVER;
+    }
+
+    /**
+     * Gets the deck.
+     * @return the deck
+     */
+    public Deck getDeck() {
+        return deck;
+    }
+
+    /**
+     * Gets the current round number.
+     * 
+     * @return the current round number
+     */
+    public int getRoundNumber() {
+        return round.get();
+    }
+    
+    /**
+     * Sets the target score for the current round.
+     * 
+     * @param targetScore the target score to set
+     */
+    public void setTargetScore(int targetScore) {
+        this.targetScore.set(targetScore);
+    }
+
+    /**
+     * Gets the property tracking the number of cards remaining in the deck.
+     * 
+     * @return the remaining cards property
+     */
+    public IntegerProperty remainingCardsProperty() {
+        return remainingCards;
+    }
+    
+    /**
+     * Updates the remaining cards property.
+     * This should be called whenever the deck changes.
+     */
+    private void updateRemainingCards() {
+        remainingCards.set(deck.getCardCount());
     }
 }
