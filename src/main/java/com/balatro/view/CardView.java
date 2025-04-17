@@ -198,7 +198,7 @@ public class CardView extends StackPane {
             new KeyFrame(Duration.millis(200), 
                 new KeyValue(scaleXProperty(), 1.0),  // Keep the same scale
                 new KeyValue(scaleYProperty(), 1.0),  // Keep the same scale
-                new KeyValue(translateYProperty(), -12), // Move up 12px
+                new KeyValue(translateYProperty(), -12), // Move up by 12px
                 new KeyValue(dropShadow.radiusProperty(), 12.0),
                 new KeyValue(dropShadow.colorProperty(), Color.color(0, 0.8, 0, 0.6))
             )
@@ -274,7 +274,7 @@ public class CardView extends StackPane {
             // Scale up the card slightly for better visibility
             setScaleX(1.05);
             setScaleY(1.05);
-            setTranslateY(-12); // Move up 12px
+            setTranslateY(-12); // Move up by 12px
             
             // Add a style class for CSS styling
             getStyleClass().add("selected-card");

@@ -489,3 +489,41 @@ Key benefits:
 - Added deck viewer overlay to show card distribution
 - Increased the height of UI components for better visibility
 
+## Online Implementation
+
+We have created a web-based version of the Balatro game using modern web technologies. The web implementation allows players to enjoy the game online, compete with others, and track their scores on a leaderboard.
+
+### Web Frontend
+
+The web frontend is built with:
+- **React**: For building the UI components
+- **TypeScript**: For type-safe JavaScript code
+- **Vite**: For fast development and optimized production builds
+- **Tailwind CSS**: For styling and responsive design
+- **Framer Motion**: For smooth animations and transitions
+
+The frontend code is located in the `balatro-web` directory. For more details, see the [Web Frontend README](balatro-web/README.md).
+
+### Backend Services
+
+The backend is built with:
+- **Spring Boot**: For REST API endpoints and business logic
+- **AWS DynamoDB**: For storing user data and game state
+- **AWS S3**: For storing assets and static files
+- **AWS Cognito**: For user authentication (planned)
+
+### Architecture
+
+The online implementation follows a client-server architecture:
+1. **Client (React)**: Handles UI rendering, user interactions, and communicates with the server via REST APIs
+2. **Server (Spring Boot)**: Processes game logic, manages user sessions, and stores data in AWS services
+3. **Database (DynamoDB)**: Stores user profiles, game states, and leaderboard data
+4. **Storage (S3)**: Hosts static assets and the compiled frontend code
+
+### Deployment
+
+The online version is deployed to AWS with:
+- Frontend hosted on **S3** and distributed via **CloudFront**
+- Backend running on **Elastic Beanstalk**
+- CI/CD pipeline using **AWS CodePipeline**
+
