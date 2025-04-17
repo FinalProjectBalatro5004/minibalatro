@@ -497,10 +497,10 @@ We have created a web-based version of the Balatro game using modern web technol
 
 The web frontend is built with:
 - **React**: For building the UI components
-- **TypeScript**: For type-safe JavaScript code
+- **JavaScript**: For type-safe JavaScript code
 - **Vite**: For fast development and optimized production builds
 - **Tailwind CSS**: For styling and responsive design
-- **Framer Motion**: For smooth animations and transitions
+
 
 The frontend code is located in the `balatro-web` directory. For more details, see the [Web Frontend README](balatro-web/README.md).
 
