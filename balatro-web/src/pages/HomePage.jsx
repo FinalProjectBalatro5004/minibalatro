@@ -1,8 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import Balatro from '../components/Balatro';
+import { useNavigate } from 'react-router-dom';
 
 const HomePage = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
       {/* Balatro Background */}
@@ -58,19 +61,13 @@ const HomePage = () => {
             </div>
           </div>
           
-          <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <Link 
-              to="/game" 
-              className="px-8 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-colors shadow-lg text-xl"
-            >
-              Play Now
-            </Link>
-            <Link 
-              to="/auth" 
-              className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg transition-colors shadow-lg text-xl"
+          <div className="flex flex-col items-center gap-4">
+            <button
+              onClick={() => navigate('/auth')}
+              className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors shadow-lg"
             >
               Sign In
-            </Link>
+            </button>
           </div>
         </div>
         

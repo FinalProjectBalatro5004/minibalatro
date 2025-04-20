@@ -1,0 +1,23 @@
+{
+  "dev": {
+    "awscloudformation": {
+      "AuthRoleName": "amplify-minibalatro-dev-730c5-authRole",
+      "UnauthRoleArn": "arn:aws:iam::879381267489:role/amplify-minibalatro-dev-730c5-unauthRole",
+      "AuthRoleArn": "arn:aws:iam::879381267489:role/amplify-minibalatro-dev-730c5-authRole",
+      "Region": "us-west-1",
+      "DeploymentBucketName": "amplify-minibalatro-dev-730c5-deployment",
+      "UnauthRoleName": "amplify-minibalatro-dev-730c5-unauthRole",
+      "StackName": "amplify-minibalatro-dev-730c5",
+      "StackId": "arn:aws:cloudformation:us-west-1:879381267489:stack/amplify-minibalatro-dev-730c5/f85a07a0-1e1d-11f0-aedb-06991c5b9f23",
+      "AmplifyAppId": "d3ibej5ai7d5t6"
+    },
+    "categories": {
+      "hosting": {
+        "amplifyhosting": {
+          "appId": "d3ibej5ai7d5t6",
+          "type": "manual"
+        }
+      }
+    }
+  }
+}
