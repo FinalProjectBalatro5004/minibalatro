@@ -2,8 +2,16 @@ package com.balatro.service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import com.balatro.model.Player;
+import com.balatro.model.Card;
+import com.balatro.model.Deck;
+import com.balatro.model.Hand;
+import com.balatro.model.Joker;
+import com.balatro.model.JokerType;
+import com.balatro.model.ActivationType;
+import com.balatro.model.RarityType;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.IntegerProperty;
@@ -13,6 +21,8 @@ import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 
 /**
  * GameStateManager coordinates the overall game flow, including round progression,
@@ -47,6 +57,10 @@ public class GameStateManager {
     private static final int MAX_ROUNDS = 10;
     private static final int DEFAULT_MAX_HANDS = 4;  // Starting counts as 1 hand, maximum of 4 hands allowed
     private static final int DEFAULT_MAX_DISCARDS = 4;  // Maximum of 4 discards allowed
+    
+    // Add joker-related fields
+    private Joker currentJoker;
+    private final Random random = new Random();
     
     /**
      * Enum representing the high-level phases of the game.
@@ -185,6 +199,12 @@ public class GameStateManager {
         
         // Set initial game phase
         setGamePhase(GamePhase.GAME_START);
+        
+        // Generate a random joker
+        generateRandomJoker();
+        
+        // Start a new game in the game service
+        gameService.startNewGame();
     }
     
     /**
@@ -202,7 +222,13 @@ public class GameStateManager {
      */
     public void startNewGame() {
         initializeGame();
-        gameService.newGame();
+        gameService.startNewGame();
+        
+        // Generate a random joker
+        generateRandomJoker();
+        
+        // Update the game phase
+        setGamePhase(GamePhase.GAME_START);
     }
     
     /**
@@ -308,6 +334,9 @@ public class GameStateManager {
             // Reset hand and discard limits for the new stage
             resetLimitsForNewStage();
             
+            // Generate a new Joker for the next stage
+            generateRandomJoker();
+            
             // Log the transition
             System.out.println("Advanced from " + currentStageCopy.getDisplayName() + 
                               " to " + nextStage.getDisplayName() + 
@@ -322,6 +351,9 @@ public class GameStateManager {
             
             // Reset hand and discard limits for the new stage
             resetLimitsForNewStage();
+            
+            // Generate a new Joker for the next level
+            generateRandomJoker();
             
             // Increase ante for the next level (increase ante value in advance, but don't deduct it yet)
             int currentAnte = ante.get();
@@ -629,5 +661,41 @@ public class GameStateManager {
      */
     public BooleanProperty discardLimitReachedProperty() {
         return discardLimitReached;
+    }
+    
+    /**
+     * Generates a random joker for the current round.
+     */
+    private void generateRandomJoker() {
+        // Get all available joker types
+        JokerType[] jokerTypes = JokerType.values();
+        
+        // Randomly select a joker type
+        JokerType selectedType = jokerTypes[random.nextInt(jokerTypes.length)];
+        
+        // Create a new joker with the selected type
+        currentJoker = new Joker(
+            selectedType,
+            selectedType.getMultiplier(),
+            selectedType.getActivationType(),
+            selectedType.getRarity()
+        );
+        
+        // Set the joker in the game service
+        gameService.setCurrentJoker(currentJoker);
+        
+        // Log the joker effect
+        System.out.println("Generated new Joker: " + selectedType.getName() + 
+                         " - Effect: " + selectedType.getEffect() +
+                         " - Multiplier: " + selectedType.getMultiplier() +
+                         " - Activation: " + selectedType.getActivationType().getDisplayName());
+    }
+    
+    /**
+     * Gets the current joker.
+     * @return the current joker
+     */
+    public Joker getCurrentJoker() {
+        return currentJoker;
     }
 } 

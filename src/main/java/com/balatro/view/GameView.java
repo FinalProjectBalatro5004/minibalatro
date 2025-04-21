@@ -3,6 +3,7 @@ package com.balatro.view;
 import java.util.List;
 
 import com.balatro.model.Card;
+import com.balatro.model.Joker;
 import com.balatro.service.GameService;
 import com.balatro.service.GameService.GameState;
 import com.balatro.service.GameStateManager;
@@ -53,7 +54,7 @@ public class GameView extends BorderPane {
     
     private HBox playerHandArea;
     private HBox selectedCardsArea;
-    private HBox discardPileArea;
+    private HBox jokerArea;
     
     private Button drawButton;
     private Button playButton;
@@ -72,6 +73,10 @@ public class GameView extends BorderPane {
     
     // Add new field for deck viewer overlay
     private DeckViewerOverlay deckViewerOverlay;
+    
+    // Add new fields for joker
+    private Label jokerEffectLabel;
+    private Joker currentJoker;
     
     /**
      * Creates a new game view.
@@ -95,21 +100,39 @@ public class GameView extends BorderPane {
         playerHandArea = new HBox(6);
         playerHandArea.getStyleClass().addAll("card-area");
         playerHandArea.setAlignment(Pos.CENTER);
-        playerHandArea.prefWidthProperty().bind(widthProperty().subtract(30)); // Adjust for padding
+        playerHandArea.prefWidthProperty().bind(widthProperty().subtract(30));
         
-        // Selected cards area is still created but will not be displayed
+        // Selected cards area
         selectedCardsArea = new HBox(6);
         selectedCardsArea.getStyleClass().addAll("card-area", "selected-cards-area");
         selectedCardsArea.setAlignment(Pos.CENTER);
-        selectedCardsArea.prefWidthProperty().bind(widthProperty().subtract(30)); // Adjust for padding
-        selectedCardsArea.setVisible(false); // Hide the selected cards area
-        selectedCardsArea.setManaged(false); // Don't reserve space for it in the layout
+        selectedCardsArea.prefWidthProperty().bind(widthProperty().subtract(30));
+        selectedCardsArea.setVisible(false);
+        selectedCardsArea.setManaged(false);
         
-        // Create discard pile area with responsive layout
-        discardPileArea = new HBox(6);
-        discardPileArea.getStyleClass().addAll("card-area", "discard-pile-area");
-        discardPileArea.setAlignment(Pos.CENTER);
-        discardPileArea.prefWidthProperty().bind(widthProperty().subtract(30)); // Adjust for padding
+        // Create joker area with responsive layout
+        jokerArea = new HBox(6);
+        jokerArea.getStyleClass().addAll("card-area", "joker-area");
+        jokerArea.setAlignment(Pos.CENTER);
+        jokerArea.prefWidthProperty().bind(widthProperty().subtract(30));
+        
+        // Create joker effect label
+        jokerEffectLabel = new Label();
+        jokerEffectLabel.getStyleClass().add("joker-effect-label");
+        jokerEffectLabel.setWrapText(true);
+        jokerEffectLabel.setMaxWidth(300);
+        
+        // Add listener for game state changes to update joker display
+        gameService.gameStateProperty().addListener((obs, oldState, newState) -> {
+            updateJokerDisplay();
+        });
+        
+        // Add listener for round completion to update joker display
+        gameService.roundCompletedProperty().addListener((obs, oldValue, newValue) -> {
+            if (newValue) {
+                updateJokerDisplay();
+            }
+        });
         
         // Create notification overlay
         createNotificationOverlay();
@@ -120,14 +143,16 @@ public class GameView extends BorderPane {
         // Create buttons panel
         HBox buttonsPanel = createButtonsPanel();
         
-        // Create card areas container - Remove Selected Cards area from display
+        // Create card areas container
         VBox cardAreasContainer = new VBox(15);
         cardAreasContainer.getChildren().addAll(
                 createAreaWithLabel("Your Hand", playerHandArea),
-                // Selected Cards area is no longer added to the container
-                createAreaWithLabel("Discard Pile", discardPileArea),
+                createAreaWithLabel("Joker", jokerArea),
                 buttonsPanel
         );
+        
+        // Add joker effect label to joker area
+        jokerArea.getChildren().add(jokerEffectLabel);
         
         // Create a stack pane to handle overlay components
         StackPane gameContentWithOverlay = new StackPane();
@@ -657,7 +682,7 @@ public class GameView extends BorderPane {
         // Clear any existing displays
         playerHandArea.getChildren().clear();
         selectedCardsArea.getChildren().clear();
-        discardPileArea.getChildren().clear();
+        jokerArea.getChildren().clear();
     }
     
     /**
@@ -747,14 +772,53 @@ public class GameView extends BorderPane {
     }
     
     /**
-     * Updates the discard pile display.
+     * Updates the joker display.
      */
-    private void updateDiscardPileDisplay() {
-        discardPileArea.getChildren().clear();
+    private void updateJokerDisplay() {
+        jokerArea.getChildren().clear();
         
-        for (Card card : gameService.getDiscardPile()) {
-            CardView cardView = new CardView(card);
-            discardPileArea.getChildren().add(cardView);
+        // Get the current joker from game service
+        Joker currentJoker = gameService.getCurrentJoker();
+        
+        if (currentJoker != null) {
+            // Create a VBox to hold joker info
+            VBox jokerInfo = new VBox(5);
+            jokerInfo.setAlignment(Pos.CENTER);
+            
+            // Create labels for joker name and effect
+            Label nameLabel = new Label(currentJoker.getType().getName());
+            nameLabel.getStyleClass().add("joker-name");
+            nameLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: white;");
+            
+            Label effectLabel = new Label(currentJoker.getType().getEffect());
+            effectLabel.getStyleClass().add("joker-effect");
+            effectLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #aaaaaa; -fx-wrap-text: true;");
+            effectLabel.setMaxWidth(300);
+            
+            // Create multiplier label if applicable
+            if (currentJoker.getMultiplier() > 0) {
+                Label multiplierLabel = new Label("Multiplier: ×" + currentJoker.getMultiplier());
+                multiplierLabel.getStyleClass().add("joker-multiplier");
+                multiplierLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #ffd700;"); // Gold color
+                jokerInfo.getChildren().addAll(nameLabel, effectLabel, multiplierLabel);
+            } else {
+                jokerInfo.getChildren().addAll(nameLabel, effectLabel);
+            }
+            
+            // Add a card visual representation
+            CardView jokerCardView = new CardView(new Card("Joker", "J", 0));
+            jokerCardView.setSelected(true);
+            
+            // Create an HBox to hold the card and info side by side
+            HBox jokerDisplay = new HBox(10);
+            jokerDisplay.setAlignment(Pos.CENTER);
+            jokerDisplay.getChildren().addAll(jokerCardView, jokerInfo);
+            
+            jokerArea.getChildren().add(jokerDisplay);
+        } else {
+            Label noJokerLabel = new Label("No Joker");
+            noJokerLabel.setStyle("-fx-font-size: 16px; -fx-text-fill: #666666;");
+            jokerArea.getChildren().add(noJokerLabel);
         }
     }
     
@@ -765,7 +829,7 @@ public class GameView extends BorderPane {
         updateHandDisplay();
         // Still update selected cards internally, but don't display them
         updateSelectedCardsDisplay();
-        updateDiscardPileDisplay();
+        updateJokerDisplay();
         updateDeckSizeDisplay();
     }
     
@@ -903,7 +967,7 @@ public class GameView extends BorderPane {
         cardAreasContainer.getChildren().addAll(
                 createAreaWithLabel("Your Hand", playerHandArea),
                 // Selected Cards area removed from container
-                createScrollableAreaWithLabel("Discard Pile", discardPileArea), // Using scrollable area
+                createScrollableAreaWithLabel("Joker", jokerArea), // Using scrollable area
                 createButtonsPanel()
         );
         
@@ -939,7 +1003,7 @@ public class GameView extends BorderPane {
         cardAreasContainer.getChildren().addAll(
                 createAreaWithLabel("Your Hand", playerHandArea),
                 // Selected Cards area removed from container
-                createScrollableAreaWithLabel("Discard Pile", discardPileArea), // Using scrollable area
+                createScrollableAreaWithLabel("Joker", jokerArea), // Using scrollable area
                 createButtonsPanel()
         );
         

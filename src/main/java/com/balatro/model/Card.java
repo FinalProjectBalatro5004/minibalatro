@@ -6,7 +6,7 @@ import java.util.Objects;
  * Represents a standard playing card in the game.
  */
 public class Card {
-    private static final String[] VALID_SUITS = {"Hearts", "Diamonds", "Clubs", "Spades"};
+    private static final String[] VALID_SUITS = {"Hearts", "Diamonds", "Clubs", "Spades", "Joker"};
     private static final String[] VALID_RANKS = {"A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"};
     
     private final String suit;
@@ -16,7 +16,7 @@ public class Card {
     /**
      * Creates a new card with the specified suit, rank, and value.
      *
-     * @param suit the suit of the card (Hearts, Diamonds, Clubs, Spades)
+     * @param suit the suit of the card (Hearts, Diamonds, Clubs, Spades, Joker)
      * @param rank the rank of the card (A, 2-10, J, Q, K)
      * @param value the numerical value of the card
      * @throws IllegalArgumentException if suit or rank is invalid
@@ -77,6 +77,7 @@ public class Card {
         return switch (suit) {
             case "Hearts", "Diamonds" -> "Red";
             case "Clubs", "Spades" -> "Black";
+            case "Joker" -> "Joker";
             default -> throw new IllegalStateException("Invalid suit: " + suit);
         };
     }

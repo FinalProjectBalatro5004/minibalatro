@@ -1,12 +1,21 @@
 package com.balatro.service;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.balatro.model.Card;
 import com.balatro.model.Deck;
 import com.balatro.model.Hand;
 import com.balatro.model.HandType;
+import com.balatro.model.Joker;
+import com.balatro.model.JokerType;
+import com.balatro.model.ActivationType;
+import com.balatro.model.RarityType;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.IntegerProperty;
@@ -24,7 +33,8 @@ import javafx.collections.ObservableList;
  * This class acts as a bridge between the UI and the game model.
  */
 public class GameService {
-    private final Deck deck;
+    private final Random random = new Random();
+    private Deck deck;
     private final Hand playerHand;
     private final ObservableList<Card> discardPile;
     private final ObservableList<Card> selectedCards;
@@ -37,6 +47,9 @@ public class GameService {
     private final IntegerProperty cardsToDrawCount;
     private final BooleanProperty roundCompleted;
     private final IntegerProperty remainingCards;
+    
+    // Add joker-related fields
+    private Joker currentJoker;
 
     /**
      * Represents the current state of the game.
@@ -96,8 +109,123 @@ public class GameService {
         // Clear the player's hand (using the mutable access method)
         playerHand.getMutableCards().clear();
         
+        // Generate a random joker
+        generateRandomJoker();
+        
         // Update remaining cards property
         updateRemainingCards();
+    }
+
+    /**
+     * Generates a random joker for the current round.
+     */
+    private void generateRandomJoker() {
+        // Get all available joker types
+        JokerType[] jokerTypes = JokerType.values();
+        
+        // Randomly select a joker type
+        JokerType selectedType = jokerTypes[random.nextInt(jokerTypes.length)];
+        
+        // Create a new joker with the selected type
+        currentJoker = new Joker(
+            selectedType,
+            selectedType.getMultiplier(),
+            selectedType.getActivationType(),
+            selectedType.getRarity()
+        );
+    }
+
+    /**
+     * Gets the current joker.
+     * @return the current joker
+     */
+    public Joker getCurrentJoker() {
+        return currentJoker;
+    }
+
+    /**
+     * Applies joker effects to the hand score.
+     * @param baseScore the base score before joker effects
+     * @return the score after applying joker effects
+     */
+    public int applyJokerEffects(int baseScore) {
+        if (currentJoker == null) {
+            return baseScore;
+        }
+
+        int finalScore = baseScore;
+        
+        // Apply joker effects based on activation type
+        if (currentJoker.getActivationType() == ActivationType.INDEPENDENT) {
+            // Special handling for Fibonacci Joker
+            if (currentJoker.getType() == JokerType.FIBONACCI) {
+                // Get all card values and sort them
+                List<Integer> cardValues = selectedCards.stream()
+                    .map(Card::getValue)
+                    .sorted()
+                    .collect(Collectors.toList());
+                
+                // Check for at least 5 consecutive Fibonacci numbers
+                if (hasConsecutiveFibonacci(cardValues, 5)) {
+                    finalScore *= currentJoker.getMultiplier();
+                }
+            } else {
+                // Other independent jokers always apply their multiplier
+                finalScore *= currentJoker.getMultiplier();
+            }
+        } else if (currentJoker.getActivationType() == ActivationType.ON_SCORED) {
+            // On scored jokers check for specific conditions
+            String activeSuit = currentJoker.getType().getActiveSuit();
+            if (activeSuit != null) {
+                // Check if ALL cards in the hand match the active suit
+                boolean allMatchingSuit = selectedCards.stream()
+                    .allMatch(card -> card.getSuit().equals(activeSuit));
+                
+                // Only apply multiplier if ALL cards are of the target suit
+                if (allMatchingSuit && selectedCards.size() >= 5) {
+                    finalScore *= currentJoker.getMultiplier();
+                }
+            }
+            
+            // Special handling for Scary Face Joker
+            if (currentJoker.getType() == JokerType.SCARY_FACE) {
+                // Count face cards (J, Q, K)
+                long faceCardCount = selectedCards.stream()
+                    .filter(Card::isFaceCard)
+                    .count();
+                
+                // Add 30 chips for each face card
+                finalScore += faceCardCount * 30;
+            }
+        }
+        
+        return finalScore;
+    }
+
+    /**
+     * Checks if the given list of card values contains at least the specified number
+     * of consecutive Fibonacci numbers.
+     * @param cardValues the sorted list of card values
+     * @param requiredCount the minimum number of consecutive Fibonacci numbers required
+     * @return true if the condition is met, false otherwise
+     */
+    private boolean hasConsecutiveFibonacci(List<Integer> cardValues, int requiredCount) {
+        // Define the Fibonacci sequence up to 21 (as per the joker description)
+        Set<Integer> fibonacciNumbers = new HashSet<>(Arrays.asList(1, 1, 2, 3, 5, 8, 13, 21));
+        
+        int consecutiveCount = 0;
+        int maxConsecutive = 0;
+        
+        for (int value : cardValues) {
+            if (fibonacciNumbers.contains(value)) {
+                consecutiveCount++;
+                maxConsecutive = Math.max(maxConsecutive, consecutiveCount);
+            } else {
+                consecutiveCount = 0;
+            }
+        }
+        
+        return maxConsecutive >= requiredCount;
     }
 
     /**
@@ -217,16 +345,36 @@ public class GameService {
         // Calculate the combined base score (hand type base + card values)
         int combinedBaseScore = baseScore + cardValuesSum;
         
-        // Calculate the total score
-        int totalScore = combinedBaseScore * multiplier;
+        // Calculate the total score before joker effects
+        int scoreBeforeJoker = combinedBaseScore * multiplier;
+        
+        // Apply joker effects
+        int finalScore = applyJokerEffects(scoreBeforeJoker);
+        
+        // Get joker info for display
+        StringBuilder jokerInfo = new StringBuilder();
+        if (currentJoker != null) {
+            if (currentJoker.getType() == JokerType.SCARY_FACE) {
+                // Count face cards (J, Q, K)
+                long faceCardCount = selectedCards.stream()
+                    .filter(Card::isFaceCard)
+                    .count();
+                if (faceCardCount > 0) {
+                    jokerInfo.append(" + Scary Face: ").append(faceCardCount * 30).append(" chips");
+                }
+            } else if (finalScore > scoreBeforeJoker) {
+                jokerInfo.append(" + Joker: ×").append(currentJoker.getMultiplier());
+            }
+        }
         
         // Display the hand type and score breakdown
         currentHandTypeDisplay.set(handType.getDisplayName() + 
                                   " (Hand: " + baseScore + 
                                   " + Cards: " + cardValuesSum +
                                   " = " + combinedBaseScore +
-                                  ") × Mult: " + multiplier + 
-                                  " = " + totalScore);
+                                  ") × Mult: " + multiplier +
+                                  jokerInfo.toString() +
+                                  " = " + finalScore);
     }
 
     /**
@@ -339,9 +487,27 @@ public class GameService {
             tempHand.addCard(card);
         }
         
-        // Calculate the score
-        int handScore = tempHand.getTotalScore();
-        score.set(score.get() + handScore);
+        // Get the hand type and scores
+        HandType handType = tempHand.getHandType();
+        int baseScore = tempHand.getBaseScore();
+        int multiplier = tempHand.getMultiplier();
+        
+        // Calculate the sum of card values
+        int cardValuesSum = selectedCards.stream()
+                           .mapToInt(Card::getValue)
+                           .sum();
+        
+        // Calculate the combined base score
+        int combinedBaseScore = baseScore + cardValuesSum;
+        
+        // Calculate the score before joker effects
+        int scoreBeforeJoker = combinedBaseScore * multiplier;
+        
+        // Apply joker effects
+        int finalScore = applyJokerEffects(scoreBeforeJoker);
+        
+        // Update the score
+        score.set(score.get() + finalScore);
         
         // Store how many cards we need to draw as replacements
         int cardsToReplace = selectedCards.size();
@@ -377,7 +543,7 @@ public class GameService {
             }
         }
         
-        return handScore;
+        return finalScore;
     }
 
     /**
@@ -562,10 +728,35 @@ public class GameService {
 
     /**
      * Starts a new game.
+     * This method:
+     * 1. Resets the game state
+     * 2. Initializes a new deck
+     * 3. Generates a random joker
      */
-    public void newGame() {
-        initializeGame();
+    public void startNewGame() {
+        // Reset the game state
+        score.set(0);
+        round.set(1);
+        targetScore.set(100);  // Initial target: 100 points
         gameState.set(GameState.WAITING_FOR_SELECTION);
+        roundCompleted.set(false);
+        canDrawCards.set(false);
+        cardsToDrawCount.set(0);
+        
+        // Clear the player's hand and discard pile
+        playerHand.getMutableCards().clear();
+        discardPile.clear();
+        selectedCards.clear();
+        
+        // Initialize a new deck
+        deck = new Deck();
+        deck.shuffle();
+        
+        // Generate a random joker
+        generateRandomJoker();
+        
+        // Update remaining cards property
+        updateRemainingCards();
     }
 
     /**
@@ -617,5 +808,13 @@ public class GameService {
      */
     private void updateRemainingCards() {
         remainingCards.set(deck.getCardCount());
+    }
+
+    /**
+     * Sets the current joker.
+     * @param joker the joker to set
+     */
+    public void setCurrentJoker(Joker joker) {
+        this.currentJoker = joker;
     }
 }

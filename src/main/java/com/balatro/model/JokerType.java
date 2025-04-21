@@ -6,7 +6,7 @@ package com.balatro.model;
  */
 public enum JokerType {
     // Basic Jokers
-    STANDARD_JOKER("Joker", "Basic joker that adds +4 multiplier", 4, 2, null, 
+    STANDARD_JOKER("Joker", "Basic joker that adds +2 multiplier", 2, 2, null, 
             RarityType.COMMON, ActivationType.INDEPENDENT, "Available after first round with sufficient chips."),
     
     // Suit-specific Jokers 
@@ -22,7 +22,7 @@ public enum JokerType {
     // Advanced Jokers
     SCARY_FACE("Scary Face", "Played face cards give +30 Chips when scored", 0, 4, null,
             RarityType.COMMON, ActivationType.ON_SCORED, "Available after first round with sufficient chips."),
-    FIBONACCI("Fibonacci", "Adds Fibonacci sequence multiplier (1,1,2,3,5,8,13,21)", 0, 8, null,
+    FIBONACCI("Fibonacci", "Adds Fibonacci sequence multiplier (1,1,2,3,5,8,13,21)", 8, 8, null,
             RarityType.RARE, ActivationType.INDEPENDENT, "Win with a Straight Flush and have sufficient chips.");
 
     // Properties
