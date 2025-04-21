@@ -143,6 +143,7 @@ public class Deck {
         resetDeck();
         isNewRound = true;
         shuffle();
+        isNewRound = true; // Set back to true after shuffle
     }
 
     /**

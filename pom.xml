@@ -33,6 +33,8 @@
 		<maven.compiler.target>${java.version}</maven.compiler.target>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<javafx.maven.plugin.version>0.0.8</javafx.maven.plugin.version>
+		<mockito.version>5.8.0</mockito.version>
+		<testfx.version>4.0.17</testfx.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -80,6 +82,33 @@
 			<version>4.13.2</version>
 			<scope>test</scope>
 		</dependency>
+        <!-- Add mockito-core for better JDK compatibility -->
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>${mockito.version}</version>
+            <scope>test</scope>
+        </dependency>
+        
+        <!-- TestFX dependencies for JavaFX testing -->
+        <dependency>
+            <groupId>org.testfx</groupId>
+            <artifactId>testfx-core</artifactId>
+            <version>${testfx.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testfx</groupId>
+            <artifactId>testfx-junit5</artifactId>
+            <version>${testfx.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testfx</groupId>
+            <artifactId>openjfx-monocle</artifactId>
+            <version>jdk-12.0.1+2</version>
+            <scope>test</scope>
+        </dependency>
 	</dependencies>
 
 	<build>
@@ -101,6 +130,27 @@
 						<option>--add-opens</option>
 						<option>java.base/java.util=ALL-UNNAMED</option>
 					</options>
+				</configuration>
+			</plugin>
+			<!-- Configure Maven Surefire Plugin for Mockito as an agent -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<argLine>-XX:+EnableDynamicAgentLoading -Djdk.attach.allowAttachSelf=true --add-exports=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED -Djdk.module.illegalAccess=deny -XX:TieredStopAtLevel=1 -Xshare:off -Dprism.order=sw -Dglass.platform=Monocle -Dmonocle.platform=Headless</argLine>
+                    <systemPropertyVariables>
+                        <mockito.inline.extended>true</mockito.inline.extended>
+                        <java.awt.headless>true</java.awt.headless>
+                        <testfx.robot>glass</testfx.robot>
+                        <testfx.headless>true</testfx.headless>
+                        <prism.order>sw</prism.order>
+                        <glass.platform>Monocle</glass.platform>
+                        <monocle.platform>Headless</monocle.platform>
+                    </systemPropertyVariables>
+                    <useModulePath>false</useModulePath>
+                    <trimStackTrace>false</trimStackTrace>
+                    <forkCount>1</forkCount>
+                    <reuseForks>true</reuseForks>
 				</configuration>
 			</plugin>
 		</plugins>

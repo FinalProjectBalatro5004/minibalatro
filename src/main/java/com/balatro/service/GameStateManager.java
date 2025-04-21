@@ -4,14 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import com.balatro.model.Player;
-import com.balatro.model.Card;
-import com.balatro.model.Deck;
-import com.balatro.model.Hand;
 import com.balatro.model.Joker;
 import com.balatro.model.JokerType;
-import com.balatro.model.ActivationType;
-import com.balatro.model.RarityType;
+import com.balatro.model.Player;
 
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.IntegerProperty;
@@ -21,8 +16,6 @@ import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 
 /**
  * GameStateManager coordinates the overall game flow, including round progression,
@@ -224,6 +217,9 @@ public class GameStateManager {
         initializeGame();
         gameService.startNewGame();
         
+        // Reset player chips to the starting amount
+        playerChips.set(STARTING_CHIPS);
+        
         // Generate a random joker
         generateRandomJoker();
         
@@ -284,8 +280,8 @@ public class GameStateManager {
     }
     
     /**
-     * Records a discard action and checks if the discard limit is reached.
-     * @return true if discard was successful, false if limit reached
+     * Records a discard and returns whether it was successful.
+     * @return true if the discard was recorded, false if limit reached
      */
     public boolean recordDiscard() {
         if (discardsUsedInStage.get() >= maxDiscardsPerStage.get()) {
@@ -294,6 +290,12 @@ public class GameStateManager {
         }
         
         discardsUsedInStage.set(discardsUsedInStage.get() + 1);
+        
+        // Check if we've reached the limit after incrementing
+        if (discardsUsedInStage.get() >= maxDiscardsPerStage.get()) {
+            discardLimitReached.set(true);
+        }
+        
         return true;
     }
     
@@ -323,6 +325,10 @@ public class GameStateManager {
         int roundScore = gameService.getScore();
         int targetScore = currentStage.get().getTargetScore();
         
+        // Award chips based on the score
+        int chipsEarned = calculateChipsEarned(roundScore);
+        playerChips.set(playerChips.get() + chipsEarned);
+        
         // Progress to the next stage or level
         LevelStage nextStage = currentStage.get().getNextStage();
         LevelStage currentStageCopy = currentStage.get();
@@ -351,6 +357,9 @@ public class GameStateManager {
             
             // Reset hand and discard limits for the new stage
             resetLimitsForNewStage();
+            
+            // Reset the score for the new level
+            gameService.scoreProperty().set(0);
             
             // Generate a new Joker for the next level
             generateRandomJoker();
@@ -565,7 +574,8 @@ public class GameStateManager {
      * @return true if the game is over
      */
     public boolean isGameOver() {
-        return currentPhase.get() == GamePhase.GAME_OVER;
+        // Game is over if either the phase is GAME_OVER or player has no chips
+        return currentPhase.get() == GamePhase.GAME_OVER || playerChips.get() <= 0;
     }
     
     /** 

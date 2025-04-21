@@ -49,7 +49,7 @@ class JokerTypeTest {
         JokerType[] values = JokerType.values();
         assertEquals(8, values.length);
         assertEquals(JokerType.STANDARD_JOKER, values[0]);
-        assertEquals(JokerType.FIBONACCI, values[values.length - 1]);
+        assertEquals(JokerType.LUCKY_JOKER, values[values.length - 1]);
     }
 
     @Test
@@ -76,4 +76,16 @@ class JokerTypeTest {
         assertEquals(RarityType.COMMON, JokerType.SCARY_FACE.getRarity());
         assertEquals(ActivationType.ON_SCORED, JokerType.SCARY_FACE.getActivationType());
     }
-} 
+
+    @Test
+    void testLuckyJoker() {
+        assertEquals("Lucky Joker", JokerType.LUCKY_JOKER.getName());
+        assertEquals("Adds +4 Mult if hand contains at least two 7s", JokerType.LUCKY_JOKER.getEffect());
+        assertEquals(4, JokerType.LUCKY_JOKER.getMultiplier());
+        assertEquals(6, JokerType.LUCKY_JOKER.getCost());
+        assertNull(JokerType.LUCKY_JOKER.getActiveSuit());
+        assertEquals(RarityType.UNCOMMON, JokerType.LUCKY_JOKER.getRarity());
+        assertEquals(ActivationType.ON_SCORED, JokerType.LUCKY_JOKER.getActivationType());
+        assertEquals("Win with a hand containing at least two 7s.", JokerType.LUCKY_JOKER.getUnlockRequirement());
+    }
+}

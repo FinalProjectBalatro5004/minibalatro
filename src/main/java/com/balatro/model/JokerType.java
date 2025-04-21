@@ -23,7 +23,9 @@ public enum JokerType {
     SCARY_FACE("Scary Face", "Played face cards give +30 Chips when scored", 0, 4, null,
             RarityType.COMMON, ActivationType.ON_SCORED, "Available after first round with sufficient chips."),
     FIBONACCI("Fibonacci", "Adds Fibonacci sequence multiplier (1,1,2,3,5,8,13,21)", 8, 8, null,
-            RarityType.RARE, ActivationType.INDEPENDENT, "Win with a Straight Flush and have sufficient chips.");
+            RarityType.RARE, ActivationType.INDEPENDENT, "Win with a Straight Flush and have sufficient chips."),
+    LUCKY_JOKER("Lucky Joker", "Adds +4 Mult if hand contains at least two 7s", 4, 6, null,
+            RarityType.UNCOMMON, ActivationType.ON_SCORED, "Win with a hand containing at least two 7s.");
 
     // Properties
     private final String name;
