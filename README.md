@@ -605,4 +605,64 @@ The project follows a dual-architecture approach:
    - Backend deployed as Spring Boot application
    - Database hosted on AWS DynamoDB
 
+### Running the Web Version
+
+To run the web version of the application locally, follow these steps:
+
+#### Frontend (React)
+
+1. Navigate to the balatro-web directory:
+   ```bash
+   cd balatro-web
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Create a `.env` file in the balatro-web directory with the following AWS credentials:
+   ```
+  We will provide it when we submit the assignment. Please place the .env file inside the balatro-web folder
+   ```
+
+4. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+5. Access the application at `http://localhost:5173`
+
+#### Backend (Spring Boot)
+
+1. Navigate to the project root directory:
+   ```bash
+   cd minibalatro
+   ```
+
+2. Run the Spring Boot application using Maven:
+   ```bash
+   ./mvnw spring-boot:run
+   ```
+
+3. The API will be available at `http://localhost:8080`
+
+#### Connection Configuration
+
+By default, the frontend will try to connect to the backend at `http://localhost:8080`. If your backend is running on a different port or host, you can configure it by editing the `vite.config.js` file in the balatro-web directory:
+
+```javascript
+export default defineConfig({
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://your-backend-server:port',
+        changeOrigin: true,
+      },
+    },
+  },
+  // other configuration...
+});
+```
+
 # JavaFX-version
