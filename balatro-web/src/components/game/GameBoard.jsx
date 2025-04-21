@@ -7,6 +7,7 @@ import HandEvaluationService from '../../services/handEvaluationService';
 import GameService from '../../services/gameService';
 import Toast from '../ui/Toast';
 import FuzzyText from '../ui/FuzzyText';
+import { authService } from '../../services/authService';
 
 const VALID_SUITS = ["Hearts", "Diamonds", "Clubs", "Spades"];
 const VALID_RANKS = ["A", "2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K"];
@@ -87,6 +88,9 @@ const GameBoard = () => {
   const [gamePhase, setGamePhase] = useState('Bite Selection');
   const [hoverIntensity, setHoverIntensity] = useState(0.5);
   const [enableHover, setEnableHover] = useState(true);
+  
+  // Joker state
+  const [activeJokers, setActiveJokers] = useState([]);
   
   // Game stages
   const [gameStages, setGameStages] = useState([]);
@@ -199,6 +203,25 @@ const GameBoard = () => {
     
     fetchGameData();
     // Don't start new game automatically, wait for bite selection
+  }, []);
+  
+  // 初始化时从数据库加载最高chips
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const username = localStorage.getItem('username');
+        if (username) {
+          const userData = await authService.getUserData(username);
+          if (userData && userData.highestChips) {
+            setChips(userData.highestChips);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading user data:', error);
+      }
+    };
+
+    loadUserData();
   }, []);
   
   // Handle bite selection
@@ -346,29 +369,66 @@ const GameBoard = () => {
       handType = HAND_TYPES[4]; // Straight
     } else if (trips > 0) {
       handType = HAND_TYPES[3]; // Three of a Kind
-    } else if (pairs === 2) {
+    } else if (pairs >= 2) {
       handType = HAND_TYPES[2]; // Two Pair
     } else if (pairs === 1) {
       handType = HAND_TYPES[1]; // Pair
     } else {
       handType = HAND_TYPES[0]; // High Card
     }
-    
+
+    // Calculate base score and multiplier
+    let baseScore = handType.baseScore;
+    let multiplier = handType.multiplier;
+    let cardsValue = 0;
+
+    // Apply joker buffs
+    for (const joker of activeJokers) {
+      if (joker.activationType === 'INDEPENDENT') {
+        // Independent jokers add to multiplier directly
+        multiplier += joker.multiplier;
+      } else if (joker.activationType === 'ON_SCORED') {
+        // On scored jokers check for specific conditions
+        if (joker.activeSuit) {
+          // Suit-specific jokers - only activate with 5 cards of the same suit
+          const matchingCards = cards.filter(card => card.suit === joker.activeSuit);
+          if (matchingCards.length >= 5) {
+            multiplier += joker.multiplier;
+          }
+        } else if (joker.name === 'Scary Face') {
+          // Face card joker
+          const faceCards = cards.filter(card => ['J', 'Q', 'K'].includes(card.rank));
+          if (faceCards.length > 0) {
+            cardsValue += faceCards.length * 30; // Add 30 chips per face card
+          }
+        }
+      }
+    }
+
     // Calculate total card values
-    const cardsValue = cards.reduce((sum, card) => sum + card.value, 0);
-    
-    // Calculate total score
-    const totalScore = (handType.baseScore + cardsValue) * handType.multiplier;
-    
+    for (const card of cards) {
+      cardsValue += card.value;
+    }
+
+    const totalScore = (baseScore + cardsValue) * multiplier;
+
     return {
       handType: handType.name,
-      baseScore: handType.baseScore,
+      baseScore,
+      multiplier,
       cardsValue,
-      multiplier: handType.multiplier,
       totalScore
     };
   };
   
+  // Add state for current level multiplier
+  const [levelMultiplier, setLevelMultiplier] = useState(1);
+
+  // Function to get current joker cost
+  const getJokerCost = (baseCost) => {
+    return baseCost * levelMultiplier;
+  };
+
   // Add a function to reset the stage with a new deck
   const resetStage = (nextStage) => {
     // Reset score to 0
@@ -401,11 +461,21 @@ const GameBoard = () => {
     
     // Check if we're moving to a new level
     if (nextStage.level > level) {
-      // Award 4x bite amount for completing a level
-      const reward = biteAmount * 4;
+      // Award 10x bite amount for completing a level
+      const reward = biteAmount * 10;
       setChips(prevChips => prevChips + reward);
       
-      showToast(`Advanced to Level ${nextStage.level}! Earned ${reward} chips!`, 'success');
+      // Double the level multiplier for joker prices
+      setLevelMultiplier(prev => prev * 2);
+      
+      // Reset joker purchase status and active jokers when entering a new level
+      setHasPurchasedJoker(false);
+      setActiveJokers([]);
+      
+      showToast(`Advanced to Level ${nextStage.level}! Earned ${reward} chips! Joker prices have doubled!`, 'success');
+    } else {
+      // Keep jokers when moving to next stage within the same level
+      setHasPurchasedJoker(false); // Only reset purchase status
     }
     
     // Show success toast
@@ -421,6 +491,44 @@ const GameBoard = () => {
     setDiscardCount(0);
   };
   
+  const [highestChips, setHighestChips] = useState(0);
+
+  // 初始化时从localStorage获取最高chips
+  useEffect(() => {
+    const savedHighestChips = localStorage.getItem('highestChips');
+    if (savedHighestChips) {
+      setHighestChips(parseInt(savedHighestChips));
+    }
+  }, []);
+
+  // 更新最高chips并保存到数据库
+  const updateHighestChips = async (newChips) => {
+    if (newChips > highestChips) {
+      setHighestChips(newChips);
+      localStorage.setItem('highestChips', newChips.toString());
+      
+      try {
+        const username = localStorage.getItem('username');
+        if (username) {
+          await authService.updateUserData(username, { highestChips: newChips });
+          console.log('Highest chips updated successfully');
+        }
+      } catch (error) {
+        console.error('Error updating highest chips:', error);
+      }
+    }
+  };
+
+  // 在chips变化时检查是否需要更新最高值
+  useEffect(() => {
+    updateHighestChips(chips);
+  }, [chips]);
+
+  // 在游戏结束时保存一次
+  const handleGameEnd = () => {
+    updateHighestChips(chips);
+  };
+
   const handlePlayHand = () => {
     if (selectedCards.length === 0) {
       // Use Toast instead of alert
@@ -553,6 +661,172 @@ const GameBoard = () => {
     showToast(`Discarded ${selectedCards.length} cards`, 'success');
   };
   
+  // Add joker management functions
+  const addJoker = (joker) => {
+    setActiveJokers(prev => [...prev, joker]);
+    setHasPurchasedJoker(true);
+    showToast(`Added ${joker.name} to your jokers!`, 'success');
+  };
+
+  const removeJoker = (jokerName) => {
+    setActiveJokers(prev => prev.filter(j => j.name !== jokerName));
+    showToast(`Removed ${jokerName} from your jokers!`, 'warning');
+  };
+
+  // Reset joker purchase status when stage changes
+  const [hasPurchasedJoker, setHasPurchasedJoker] = useState(false);
+  useEffect(() => {
+    setHasPurchasedJoker(false);
+  }, [stage]);
+
+  // Add joker types constant
+  const JOKER_TYPES = [
+    {
+      name: "Standard Joker",
+      effect: "Basic joker that adds +1 multiplier",
+      multiplier: 1,
+      baseCost: 25,
+      activeSuit: null,
+      rarity: "COMMON",
+      activationType: "INDEPENDENT",
+      unlockRequirement: "Available after first round with sufficient chips."
+    },
+    {
+      name: "Scary Face",
+      effect: "Played face cards (J, Q, K) give +30 Chips when scored",
+      multiplier: 0,
+      baseCost: 35,
+      activeSuit: null,
+      rarity: "COMMON",
+      activationType: "ON_SCORED",
+      unlockRequirement: "Available after first round with sufficient chips."
+    },
+    {
+      name: "Greedy Joker",
+      effect: "When scoring a hand with 5 Diamond cards, gives +3 Mult",
+      multiplier: 3,
+      baseCost: 40,
+      activeSuit: "Diamonds",
+      rarity: "COMMON",
+      activationType: "ON_SCORED",
+      unlockRequirement: "Available after first round with sufficient chips."
+    },
+    {
+      name: "Lusty Joker",
+      effect: "When scoring a hand with 5 Heart cards, gives +3 Mult",
+      multiplier: 3,
+      baseCost: 40,
+      activeSuit: "Hearts",
+      rarity: "COMMON",
+      activationType: "ON_SCORED",
+      unlockRequirement: "Available after first round with sufficient chips."
+    },
+    {
+      name: "Wrathful Joker",
+      effect: "When scoring a hand with 5 Spade cards, gives +3 Mult",
+      multiplier: 3,
+      baseCost: 40,
+      activeSuit: "Spades",
+      rarity: "COMMON",
+      activationType: "ON_SCORED",
+      unlockRequirement: "Available after first round with sufficient chips."
+    },
+    {
+      name: "Gluttonous Joker",
+      effect: "When scoring a hand with 5 Club cards, gives +3 Mult",
+      multiplier: 3,
+      baseCost: 40,
+      activeSuit: "Clubs",
+      rarity: "COMMON",
+      activationType: "ON_SCORED",
+      unlockRequirement: "Available after first round with sufficient chips."
+    }
+  ];
+
+  // Add joker shop UI
+  const renderJokerShop = () => {
+    if (gamePhase !== 'Playing Cards') return null;
+
+    // Check if player has reached target score
+    const currentStage = gameStages.find(s => s.displayName === stage && s.level === level);
+    const hasReachedTarget = currentStage && score >= currentStage.targetScore;
+
+    // Don't show shop if target is reached
+    if (hasReachedTarget) return null;
+
+    return (
+      <div className="mt-4 p-4 bg-gray-800 rounded-lg">
+        <h3 className="text-lg font-bold text-purple-400 mb-4">Joker Shop</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {JOKER_TYPES.map((joker, index) => (
+            <div key={index} className="p-3 bg-gray-700 rounded-lg">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h4 className="font-bold text-white">{joker.name}</h4>
+                  <p className="text-sm text-gray-300">{joker.effect}</p>
+                  {joker.activeSuit && (
+                    <span className="text-xs text-yellow-400">({joker.activeSuit})</span>
+                  )}
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-gray-400">Cost: {getJokerCost(joker.baseCost)} chips</p>
+                  <p className="text-xs text-gray-500">{joker.rarity}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  const currentCost = getJokerCost(joker.baseCost);
+                  if (chips >= currentCost) {
+                    setChips(prev => prev - currentCost);
+                    addJoker(joker);
+                  } else {
+                    showToast(`Not enough chips! Need ${currentCost} chips to buy ${joker.name}`, 'error');
+                  }
+                }}
+                className="mt-2 w-full bg-purple-600 hover:bg-purple-700 text-white py-1 px-3 rounded text-sm"
+                disabled={chips < getJokerCost(joker.baseCost) || hasPurchasedJoker}
+              >
+                {hasPurchasedJoker ? "Already Purchased" : chips < getJokerCost(joker.baseCost) ? "Not Enough Chips" : "Buy"}
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  // Add joker management UI
+  const renderJokerManagement = () => {
+    if (activeJokers.length === 0) return null;
+
+    return (
+      <div className="mt-4 p-4 bg-gray-800 rounded-lg">
+        <h3 className="text-lg font-bold text-purple-400 mb-4">Your Jokers</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {activeJokers.map((joker, index) => (
+            <div key={index} className="p-3 bg-gray-700 rounded-lg">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h4 className="font-bold text-white">{joker.name}</h4>
+                  <p className="text-sm text-gray-300">{joker.effect}</p>
+                  {joker.activeSuit && (
+                    <span className="text-xs text-yellow-400">({joker.activeSuit})</span>
+                  )}
+                </div>
+                <button
+                  onClick={() => removeJoker(joker.name)}
+                  className="bg-red-600 hover:bg-red-700 text-white py-1 px-3 rounded text-sm"
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+  
   return (
     <div className="h-full overflow-auto bg-gradient-to-b from-blue-950 to-purple-950 text-white">
       {/* Toast组件 */}
@@ -589,6 +863,25 @@ const GameBoard = () => {
                 </FuzzyText>
               </div>
               <div className="flex gap-4">
+                {localStorage.getItem('username') && (
+                  <div className="flex items-center gap-4">
+                    <span className="text-white">
+                      Welcome, {localStorage.getItem('username')}!
+                    </span>
+                    <span className="text-yellow-400">
+                      Highest Chips: {highestChips}
+                    </span>
+                    <button
+                      onClick={() => {
+                        authService.logout();
+                        window.location.href = '/';
+                      }}
+                      className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
                 <button 
                   onClick={() => navigate('/')}
                   className="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors shadow-md"
@@ -596,16 +889,10 @@ const GameBoard = () => {
                   Home
                 </button>
                 <button 
-                  onClick={() => navigate('/auth')}
-                  className="px-4 py-2 bg-red-700 hover:bg-red-600 rounded-lg transition-colors shadow-md"
-                >
-                  Quit
-                </button>
-                <button 
-                  
+                  onClick={() => navigate('/ranking')}
                   className="px-4 py-2 bg-blue-700 hover:bg-blue-400 rounded-lg transition-colors shadow-md"
                 >
-                  Profile
+                  Ranking
                 </button>
               </div>
             </div>
@@ -617,7 +904,7 @@ const GameBoard = () => {
                 
                 <p className="text-gray-300 mb-8">
                   Your bite amount will be deducted from your initial 100 chips.
-                  <br />When you complete a level, you'll receive 4x your bite amount as a reward!
+                  <br />When you complete a level, you'll receive 10x your bite amount as a reward!
                 </p>
                 
                 <div className="flex justify-center gap-6 mb-8">
@@ -715,8 +1002,31 @@ const GameBoard = () => {
                       <p className="text-s font-bold mb-3 text-center bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-pink-500">
                         {handEvaluation.handType}
                       </p>
-                      <p className="text-sm font-bold text-white mb-2 ">
-                        (H: {handEvaluation.baseScore} + C: {handEvaluation.cardsValue}) × Mul: {handEvaluation.multiplier} = <span className="text-yellow-400 font-bold">{handEvaluation.totalScore}</span>
+                      <p className="text-sm font-bold text-white mb-2">
+                        (H: {handEvaluation.baseScore} + C: {handEvaluation.cardsValue}) × Mul: {handEvaluation.multiplier}
+                        {activeJokers.length > 0 && (
+                          <span className="text-purple-400">
+                            {activeJokers.map(joker => {
+                              if (joker.activationType === 'INDEPENDENT') {
+                                return ` (+${joker.multiplier} from ${joker.name})`;
+                              } else if (joker.activationType === 'ON_SCORED') {
+                                if (joker.activeSuit) {
+                                  const matchingCards = selectedCards.filter(card => card.suit === joker.activeSuit);
+                                  if (matchingCards.length >= 5) {
+                                    return ` (+${joker.multiplier} from ${joker.name})`;
+                                  }
+                                } else if (joker.name === 'Scary Face') {
+                                  const faceCards = selectedCards.filter(card => ['J', 'Q', 'K'].includes(card.rank));
+                                  if (faceCards.length > 0) {
+                                    return ` (+${faceCards.length * 30} Chips from ${joker.name})`;
+                                  }
+                                }
+                              }
+                              return '';
+                            }).join('')}
+                          </span>
+                        )}
+                        = <span className="text-yellow-400 font-bold">{handEvaluation.totalScore}</span>
                       </p>
                     </div>
                   ) : (
@@ -724,10 +1034,6 @@ const GameBoard = () => {
                   )}
                   </div>
                 </div>
-                
-                
-                
-               
                 
                 {/* Hand section */}
                 <div className="mb-8">
@@ -762,6 +1068,9 @@ const GameBoard = () => {
                     </button>
                   </div>
                 </div>
+
+                {/* Joker Management - Always show if there are active jokers */}
+                {renderJokerManagement()}
                 
                 {/* Discard pile */}
                 <div className="relative mb-6">
@@ -783,7 +1092,8 @@ const GameBoard = () => {
                   </div>
                 </div>
                 
-                
+                {/* Joker Shop - Show only when conditions are met */}
+                {renderJokerShop()}
               </>
             )}
           </div>
