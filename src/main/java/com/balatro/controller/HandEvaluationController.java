@@ -13,6 +13,9 @@ import com.balatro.model.Card;
 import com.balatro.model.Hand;
 
 /**
+ * This controller is responsible for evaluating the hand and returning the hand type, score, and other details.    
+ */
+/**
  * REST Controller for hand evaluation operations
  */
 @RestController

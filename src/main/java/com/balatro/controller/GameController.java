@@ -11,7 +11,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.balatro.service.GameStateManager;
-
+/**
+ * This controller is responsible for handling the game state and transitions.  
+ * It provides endpoints for getting game stages and stage transitions.
+ */
 /**
  * REST Controller for game operations
  */

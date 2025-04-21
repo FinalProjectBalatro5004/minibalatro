@@ -7,7 +7,7 @@ A JavaFX-based implementation of the Balatro card game that simulates the core g
 Mini-Balatro reimagines the popular roguelike deck-building game with a focus on adding online features and community interaction that modern gamers expect. Our implementation:
 
 - Preserves the core poker-based roguelike gameplay experience
-- Adds online capabilities and leaderboards (planned)
+- Adds online capabilities and global ranking
 - Showcases advanced Object-Oriented Design principles
 - Provides a more connected gaming experience
 
@@ -36,7 +36,7 @@ Mini-Balatro reimagines the popular roguelike deck-building game with a focus on
   - Deck viewer overlay showing card distribution
   - Game state information display (chips, score, stage)
 
-- **Planned Online Features**:
+- **Online Features**:
   - User account system
   - Global leaderboards
   - Statistics tracking
@@ -58,6 +58,9 @@ src/
 │   ├── java/
 │   │   └── com/
 │   │       └── balatro/
+│   │           ├── controller/
+│   │           │   ├── GameController.java    # Responsible for handling the game state and transitions.  
+│   │           │   ├── HandEvaluationController.java # Responsible for evaluating the hand and returning the hand type, score, and other details. 
 │   │           ├── model/
 │   │           │   ├── ActivationType.java  # Defines types of joker activation
 │   │           │   ├── Card.java            # Represents a playing card
@@ -91,13 +94,30 @@ src/
     └── java/
         └── com/
             └── balatro/
+                ├── controller/                 # Tests for controller classes            
                 ├── model/                      # Tests for model classes
                 ├── view/                       # Tests for view classes
                 ├── service/                    # Tests for service classes
-                └── balatro_game/               # Integration tests
+                └── BalatroGameTest.java        # Integration tests
 ```
 
 ## Key Components
+### Controller Classes
+
+1. **GameController.java**: Responsible for handling the game state and transitions as a REST API controller
+   - Properties: RESTful endpoints for game stages and transitions
+   - Methods:
+     - `getGameStages()` - Returns all game stages information with their properties
+     - `getStageTransitionRules()` - Returns game stage transition rules, including score reset behavior
+
+2. **HandEvaluationController.java**: Responsible for evaluating poker hands and calculating scores via REST API
+   - Properties: RESTful endpoints for hand evaluation
+   - Methods:
+     - `evaluateHand(EvaluateHandRequest request)` - Evaluates a list of cards and returns the hand type, score, and other details
+     - `calculateCardValue(String rank)` - Calculates the value of a card based on its rank
+     - Inner classes:
+       - `EvaluateHandRequest` - DTO for hand evaluation request with card list
+       - `CardDto` - DTO for card information with rank and suit
 
 ### Model Classes
 
@@ -139,13 +159,21 @@ src/
    - Properties: cards, handType, baseScore, multiplier
    - Methods:
      - `Hand()` - Default constructor
-     - `Hand(List<Card> cards)` - Constructor with initial cards
      - `addCard(Card card)` - Adds a card to the hand
-     - `addCards(List<Card> cards)` - Adds multiple cards to the hand
-     - `removeCard(Card card)` - Removes a card from the hand
-     - `clearHand()` - Removes all cards from the hand
-     - `meetsMinimumRequirements()` - Checks if hand meets minimum play requirements
-     - `meetsMaximumRequirements()` - Checks if hand meets maximum play requirements
+     - `discardCards(List<Card> cardsToDiscard)` - Discards specified cards from the hand
+     - `drawNewCards(List<Card> newCards)` - Adds new cards to the hand after discarding
+     - `initializeHand(List<Card> initialCards)` - Initializes the hand with a set of cards
+     - `getMinCardsToPlay()` - Gets the minimum number of cards that must be played
+     - `getMaxCardsToPlay()` - Gets the maximum number of cards that can be played
+     - `getMinCardsToDiscard()` - Gets the minimum number of cards that must be discarded
+     - `getMaxCardsToDiscard()` - Gets the maximum number of cards that can be discarded
+     - `getMaxCards()` - Gets the maximum number of cards allowed in a hand
+     - `getMinCards()` - Gets the minimum number of cards allowed in a hand
+     - `canGetCards()` - Checks if the player can get more cards
+     - `isValidHand()` - Checks if the current hand is valid for playing
+     - `getRemainingCardSlots()` - Gets the number of card slots remaining
+     - `meetsMinimumRequirements()` - Checks if hand meets minimum requirements
+     - `meetsMaximumRequirements()` - Checks if hand meets maximum requirements
      - `getCards()` - Gets all cards in the hand (unmodifiable)
      - `getMutableCards()` - Gets a mutable list of cards (for initialization)
      - `getCardCount()` - Gets the number of cards in the hand
@@ -167,23 +195,27 @@ src/
      - `getPointValue(String rank)` - Gets the point value for scoring
      - `getRankCounts()` - Counts occurrences of each rank in the hand
      - `toString()` - Returns a string representation of the hand
+     - `removeCard(Card card)` - Removes a card from the hand
 
-4. **Player.java**: Manages player state, including chips and statistics
-   - Properties: name, chips, statistics
+
+4. **Player.java**: Manages player state, including chips and cards
+   - Properties: playerId, username, hand, score, isActive, chips
    - Methods:
-     - `Player(String name)` - Constructor with player name
-     - `getName()` - Gets the player's name
-     - `setName(String name)` - Sets the player's name
+     - `Player(String username)` - Constructor with player name
+     - `getPlayerId()` - Gets the player's unique ID
+     - `getUsername()` - Gets the player's username
+     - `setUsername(String username)` - Sets the player's username
+     - `getHand()` - Gets the player's hand of cards
+     - `addCard(Card card)` - Adds a card to the player's hand
+     - `removeCard(Card card)` - Removes a card from the player's hand
+     - `getScore()` - Gets the player's score
+     - `updateScore(int points)` - Updates the player's score
+     - `isActive()` - Checks if the player is active
+     - `setActive(boolean active)` - Sets the player's active status
+     - `clearHand()` - Clears all cards from the player's hand
+     - `getHandSize()` - Gets the number of cards in the player's hand
      - `getChips()` - Gets the player's chip count
      - `setChips(int chips)` - Sets the player's chip count
-     - `addChips(int amount)` - Adds chips to the player's count
-     - `removeChips(int amount)` - Removes chips from the player's count
-     - `hasEnoughChips(int amount)` - Checks if player has enough chips
-     - `getStatistics()` - Gets the player's statistics
-     - `updateStatistic(String key, int value)` - Updates a statistic value
-     - `incrementStatistic(String key)` - Increments a statistic value
-     - `equals(Object obj)` - Compares players for equality
-     - `hashCode()` - Generates a hash code for the player
      - `toString()` - Returns a string representation of the player
 
 5. **ActivationType.java**: Defines when a joker's effect activates
@@ -215,7 +247,7 @@ src/
      - `toString()` - Returns a string representation of the joker
 
 8. **JokerType.java**: Defines different types of joker cards with their effects
-   - Enum Values: STANDARD_JOKER, GREEDY_JOKER, LUSTY_JOKER, WRATHFUL_JOKER, GLUTTONOUS_JOKER, SCARY_FACE, FIBONACCI
+   - Enum Values: STANDARD_JOKER, GREEDY_JOKER, LUSTY_JOKER, WRATHFUL_JOKER, GLUTTONOUS_JOKER, SCARY_FACE, FIBONACCI, LUCKY_JOKER
    - Properties: name, effect, multiplier, cost, activeSuit, rarity, activationType, unlockRequirement
    - Methods:
      - `JokerType(String name, String effect, int multiplier, int cost, String activeSuit, RarityType rarity, ActivationType activationType, String unlockRequirement)` - Constructor
@@ -235,99 +267,57 @@ src/
      - `RarityType(String displayName)` - Constructor
      - `getDisplayName()` - Gets the display name of the rarity level
 
-### View Classes
-
-1. **CardView.java**: Visual representation of a playing card
-   - Properties: card, isSelected, UI components (background, labels, animations)
-   - Methods:
-     - `CardView(Card card)` - Constructor with card model
-     - `setupHoverAnimation()` - Sets up the animation for hovering
-     - `resizeCard(double containerWidth)` - Adjusts card size based on container
-     - `setSelected(boolean selected)` - Marks a card as selected with visual effects
-     - `getCard()` - Gets the card model for this view
-     - `getSuitSymbol(String suit)` - Gets the Unicode symbol for a suit
-     - `getSuitColor(String suit)` - Gets the color for a suit
-
-2. **GameView.java**: Main game interface that integrates all visual components
-   - Properties: gameService, stageManager, UI regions and controls
-   - Methods:
-     - `GameView(GameService gameService, GameStateManager stageManager)` - Constructor
-     - `createGameScreen()` - Creates the main game interface
-     - `createInfoBar()` - Creates the game info display area
-     - `createPlayArea()` - Creates the main play area
-     - `createHandArea()` - Creates the player's hand display area
-     - `createScrollableAreaWithLabel()` - Creates scrollable areas with labels
-     - `updateHandDisplay()` - Updates the display of the player's hand
-     - `updateDiscardPileDisplay()` - Updates the discard pile display
-     - `handleCardSelection()` - Handles player selecting a card
-     - `handleCardDeselection()` - Handles player deselecting a card
-     - `createStartScreen()` - Creates the welcome/start screen
-     - `showWinScreen()` - Shows the winning screen
-     - `showLoseScreen()` - Shows the losing screen
-     - `createScoreSection()` - Creates the score display section
-     - `updateScoreDisplay()` - Updates the score display
-     - `createAnteSection()` - Creates the ante display section
-     - `updateAnteDisplay()` - Updates the ante display
-     - `createHandLimitBar()` - Creates a progress bar for hand limits
-     - `createChipDisplay()` - Creates the chip display
-     - `showDiscardOptions()` - Shows options for discarding cards
-     - `hideDiscardOptions()` - Hides discard options
-     - `createActionButtons()` - Creates the action buttons
-     - `createDrawButton()` - Creates the draw button
-     - `createDiscardButton()` - Creates the discard button
-     - `createPlayButton()` - Creates the play button
-     - `createNewRoundButton()` - Creates the new round button
-     - `createDeckSizeLabel()` - Creates a label showing deck size
-
-3. **DeckViewerOverlay.java**: Shows the distribution of cards remaining in the deck
-   - Properties: deck, overlayContent, suitSections
-   - Methods:
-     - `DeckViewerOverlay(Deck deck)` - Constructor with deck reference
-     - `createContent()` - Creates the content of the overlay
-     - `createTitle()` - Creates the title section
-     - `createSuitSections()` - Creates sections for each suit
-     - `createSuitSection()` - Creates a section for a specific suit
-     - `updateCardCount()` - Updates the card count displays
-     - `updateDisplay()` - Updates the entire overlay display
-     - `show()` - Shows the overlay
-     - `hide()` - Hides the overlay
-     - `isShowing()` - Checks if the overlay is visible
-
 ### Service Classes
 
 1. **GameService.java**: Core game logic for card interactions and scoring
-   - Properties: deck, hand, discardPile, selectedCards, score, gameState
+   - Properties: deck, playerHand, discardPile, selectedCards, gameState, score, round, targetScore, currentHandTypeDisplay, canDrawCards, cardsToDrawCount, roundCompleted, remainingCards, currentJoker
    - Methods:
      - `GameService()` - Default constructor
-     - `newGame()` - Starts a new game
+     - `initializeGame()` - Initializes the game state
+     - `generateRandomJoker()` - Generates a random joker for the current round
+     - `getCurrentJoker()` - Gets the current joker
+     - `applyJokerEffects(int baseScore)` - Applies joker effects to the hand score
+     - `hasConsecutiveFibonacci(List<Integer> cardValues, int requiredCount)` - Checks for consecutive Fibonacci numbers
+     - `dealInitialHand()` - Deals the initial hand to the player
+     - `selectCard(Card card)` - Selects a card for play
+     - `deselectCard(Card card)` - Deselects a card
+     - `updateCurrentHandTypeDisplay()` - Updates the display of the current hand type
+     - `discardSelectedCards()` - Discards selected cards
+     - `drawCards()` - Draws cards from the deck
+     - `evaluateHand()` - Evaluates the selected cards
      - `startNewRound()` - Starts a new round
-     - `getRoundNumber()` - Gets the current round number
      - `getGameState()` - Gets the current game state
-     - `getDeck()` - Gets the current deck
-     - `getHand()` - Gets the player's current hand
+     - `gameStateProperty()` - Gets the game state property
+     - `getPlayerHand()` - Gets the player's current hand
      - `getDiscardPile()` - Gets the discard pile
      - `getSelectedCards()` - Gets the currently selected cards
      - `getScore()` - Gets the current score
-     - `setTargetScore()` - Sets the target score
-     - `getTargetScore()` - Gets the target score
-     - `getHandTypeText()` - Gets text describing the current hand type
-     - `drawCards()` - Draws cards from the deck
-     - `discardCards()` - Discards selected cards
-     - `selectCard()` - Selects a card for play
-     - `deselectCard()` - Deselects a card
-     - `clearSelectedCards()` - Clears all selected cards
-     - `evaluateSelectedCards()` - Evaluates the selected cards
-     - `calculateScore()` - Calculates the score for selected cards
-     - `hasReachedTargetScore()` - Checks if target score has been reached
-     - `gameStateProperty()` - Gets the game state property
      - `scoreProperty()` - Gets the score property
+     - `getRound()` - Gets the current round
+     - `roundProperty()` - Gets the round property
+     - `getTargetScore()` - Gets the target score
+     - `setTargetScore(int targetScore)` - Sets the target score
      - `targetScoreProperty()` - Gets the target score property
-     - `roundNumberProperty()` - Gets the round number property
-     - `remainingCardsProperty()` - Gets the remaining cards property
+     - `getCurrentHandTypeDisplay()` - Gets text describing the current hand type
+     - `currentHandTypeDisplayProperty()` - Gets the hand type display property
+     - `getCanDrawCards()` - Checks if cards can be drawn
+     - `canDrawCardsProperty()` - Gets the can draw cards property
+     - `getCardsToDrawCount()` - Gets the number of cards to draw
+     - `cardsToDrawCountProperty()` - Gets the cards to draw property
+     - `isRoundCompleted()` - Checks if the round is completed
      - `roundCompletedProperty()` - Gets the round completed property
+     - `getRemainingCards()` - Gets the number of cards remaining in the deck
+     - `remainingCardsProperty()` - Gets the remaining cards property
+     - `updateRemainingCards()` - Updates the remaining cards count
+     - `startNewGame()` - Starts a new game
+     - `isGameOver()` - Checks if the game is over
+     - `getDeck()` - Gets the current deck
+     - `getRoundNumber()` - Gets the current round number
+     - `setCurrentJoker(Joker joker)` - Sets the current joker
 
 2. **GameStateManager.java**: Manages the overall game progression and state
-   - Properties: gameService, players, currentStage, playerChips, ante, gamePhase
+   - Properties: gameService, players, currentPlayer, currentRound, currentLevel, currentStage, playerChips, ante, gamePhase, currentPhase, handsPlayedInStage, discardsUsedInStage, maxHandsPerStage, maxDiscardsPerStage, handLimitReached, discardLimitReached, currentJoker
+   - Enums: GamePhase, LevelStage
    - Methods:
      - `GameStateManager()` - Constructor 
      - `initializeGame()` - Initializes the game state
@@ -335,11 +325,11 @@ src/
      - `startNewGame()` - Starts a new game
      - `startNewRound()` - Starts a new round
      - `recordDiscard()` - Records a discard action
-     - `setAnteAmount()` - Sets the ante amount
+     - `setAnteAmount(int amount)` - Sets the ante amount
      - `resetPlayerChips()` - Resets player's chips to starting amount
      - `completeRound()` - Completes the current round
-     - `setGamePhase()` - Sets the current game phase
-     - `calculateChipsEarned()` - Calculates chips earned based on score
+     - `setGamePhase(GamePhase phase)` - Sets the current game phase
+     - `calculateChipsEarned(int score)` - Calculates chips earned based on score
      - `advanceGamePhase()` - Advances to the next game phase
      - `getGameService()` - Gets the game service
      - `getCurrentPlayer()` - Gets the current player
@@ -370,6 +360,60 @@ src/
      - `handLimitReachedProperty()` - Gets hand limit reached property
      - `isDiscardLimitReached()` - Checks if discard limit is reached
      - `discardLimitReachedProperty()` - Gets discard limit reached property
+     - `generateRandomJoker()` - Generates a random joker for the current round
+     - `getCurrentJoker()` - Gets the current joker
+
+### View Classes
+
+1. **CardView.java**: Visual representation of a playing card
+   - Properties: card, isSelected, background, cardContent, topLabel, centerLabel, bottomLabel, hoverAnimation, selectAnimation, dropShadow
+   - Methods:
+     - `CardView(Card card)` - Constructor with card model
+     - `setupHoverAnimation()` - Sets up animations for hover and selection
+     - `resizeCard(double containerWidth)` - Maintains consistent card sizing
+     - `setSelected(boolean selected)` - Marks a card as selected with visual effects
+     - `getCard()` - Gets the card model for this view
+     - `getSuitSymbol(String suit)` - Gets the Unicode symbol for a suit
+     - `getSuitColor(String suit)` - Gets the color for a suit
+
+2. **DeckViewerOverlay.java**: Shows the distribution of cards remaining in the deck
+   - Properties: deck, cardGrid, cardCells, suits, ranks, fadeIn, fadeOut, totalCardsLabel
+   - Methods:
+     - `DeckViewerOverlay(Deck deck)` - Constructor with deck reference
+     - `createCardGrid()` - Creates the grid for displaying card distribution
+     - `handleCellHover(MouseEvent event, Label cell, boolean isEntering)` - Handles hover effects for cells
+     - `updateCardDistribution()` - Updates the display based on current deck
+     - `show()` - Shows the overlay with animation
+     - `hide()` - Hides the overlay with animation
+     - `getSuitSymbol(String suit)` - Gets the Unicode symbol for a suit
+     - `getSuitColor(String suit)` - Gets the color for a suit
+
+3. **GameView.java**: Main game interface that integrates all visual components
+   - Properties: gameManager, gameService, UI components (labels, areas, buttons, overlays)
+   - Methods:
+     - `GameView()` - Default constructor that initializes game and UI
+     - `createGameInfoPanel()` - Creates the game information panel
+     - `createInfoValueLabel(String title, String value)` - Creates labeled info displays
+     - `createButtonsPanel()` - Creates action buttons panel
+     - `createAreaWithLabel(String title, HBox content)` - Creates labeled card areas
+     - `createScrollableAreaWithLabel(String title, HBox content)` - Creates scrollable areas
+     - `createNotificationOverlay()` - Creates notification system
+     - `showNotification()` - Shows notification messages
+     - `setupBindings()` - Sets up data bindings for reactive UI
+     - `handleDrawCards()` - Handles draw cards action
+     - `handlePlayHand()` - Handles play hand action
+     - `handleDiscardCards()` - Handles discard cards action
+     - `handleNextRound()` - Handles next round action
+     - `updateHandDisplay()` - Updates the player's hand display
+     - `updateSelectedCardsDisplay()` - Updates selected cards display
+     - `updateJokerDisplay()` - Updates joker display
+     - `updateAllCardDisplays()` - Updates all card displays
+     - `handleCardSelection(CardView cardView, Card card)` - Handles card selection
+     - `handleCardDeselection(CardView cardView, Card card)` - Handles card deselection
+     - `createStartScreen()` - Creates the welcome/start screen
+     - `startGame()` - Starts the game
+     - `updateDeckSizeDisplay()` - Updates the deck size display
+     - `createDeckDisplayArea()` - Creates the deck display area
 
 ## Running the Application
 
@@ -444,7 +488,7 @@ Key benefits:
 
 ### Gameplay Mechanics
 
-- **Starting**: Players begin with 100 chips and a 10-chip ante
+- **Starting**: Players begin with 100 chips and a 10-chip/50-chip/100-chip ante
 - **Hands**: Maximum of 4 hands can be played per stage
 - **Discards**: Maximum of 4 discards can be used per stage
 - **Advancement**:
@@ -482,6 +526,9 @@ Key benefits:
 
 ## Recent Changes
 
+- Added LUCKY_JOKER with ON_SCORED activation type that gives bonuses for hands with two 7s
+- Improved JavaFX tests with better error handling and initialization
+- Added new controller classes for better separation of concerns (GameController and HandEvaluationController)
 - Fixed poker hand evaluation logic to correctly identify Straight hands
 - Added Level 3 with three stages (Small Blind L3, Big Blind L3, The Hook L3)
 - Improved the discard pile area with horizontal scrolling
@@ -491,7 +538,7 @@ Key benefits:
 
 ## Online Implementation
 
-We have created a web-based version of the Balatro game using modern web technologies. The web implementation allows players to enjoy the game online, compete with others, and track their scores on a leaderboard.
+We have created a web-based version of the Balatro game using modern web technologies. The web implementation allows players to enjoy the game online, compete with others, and track their scores on a ranking system.
 
 ### Web Frontend
 
@@ -507,24 +554,55 @@ The frontend code is located in the `balatro-web` directory. For more details, s
 ### Backend Services
 
 The backend is built with:
-- **Spring Boot**: For REST API endpoints and business logic
-- **AWS DynamoDB**: For storing user data and game state
-- **AWS S3**: For storing assets and static files
-- **AWS Cognito**: For user authentication (planned)
+- **Spring Boot**: For REST API endpoints and game logic controllers
+- **DynamoDB**: For storing user profiles and game state
+- **AWS Cognito**: For user authentication and identity management
+
+The backend implementation includes:
+1. **REST Controllers**:
+   - `GameController`: Provides endpoints for accessing game stages and state transitions
+   - `HandEvaluationController`: Provides endpoints for evaluating poker hands and calculating scores
+
+    Spring Boot is used in the REST API controllers:
+      GameController.java has @RestController and @RequestMapping annotations
+      HandEvaluationController.java also uses Spring Boot annotations
+    These controllers provide endpoints for:
+      Getting game stages information (getGameStages())
+      Getting stage transition rules (getStageTransitionRules())
+      Evaluating poker hands (evaluateHand())
+
+2. **Data Storage**:
+   - DynamoDB Table (`BalatroUsers`): Stores user profiles, scores, and game history
+   - No S3 implementation is currently present in the codebase
+
+3. **Authentication**:
+   - AWS Cognito is configured but implementation appears to be in progress
 
 ### Architecture
 
-The online implementation follows a client-server architecture:
-1. **Client (React)**: Handles UI rendering, user interactions, and communicates with the server via REST APIs
-2. **Server (Spring Boot)**: Processes game logic, manages user sessions, and stores data in AWS services
-3. **Database (DynamoDB)**: Stores user profiles, game states, and leaderboard data
-4. **Storage (S3)**: Hosts static assets and the compiled frontend code
+The project follows a dual-architecture approach:
+
+1. **JavaFX Desktop Application**:
+   - Built with Java and JavaFX for desktop platforms
+   - MVC architecture with model, view, and controller packages
+   - Local game state management without remote data storage
+
+2. **Web Implementation**:
+   - **Client**: React-based frontend for browser access
+   - **Server**: Spring Boot REST API controllers for game logic
+   - **Database**: DynamoDB for user profiles and scores
+   - **Authentication**: AWS Cognito for user identity management (in progress)
 
 ### Deployment
 
-The online version is deployed to AWS with:
-- Frontend hosted on **S3** and distributed via **CloudFront**
-- Backend running on **Elastic Beanstalk**
-- CI/CD pipeline using **AWS CodePipeline**
+1. **JavaFX Desktop Application**:
+   - Distributed as a packaged JAR file
+   - Requires Java 17+ with JavaFX modules
+   - Built using Maven
+
+2. **Web Implementation**:
+   - Frontend hosted on web servers
+   - Backend deployed as Spring Boot application
+   - Database hosted on AWS DynamoDB
 
 # JavaFX-version
