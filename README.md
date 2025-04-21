@@ -527,3 +527,4 @@ The online version is deployed to AWS with:
 - Backend running on **Elastic Beanstalk**
 - CI/CD pipeline using **AWS CodePipeline**
 
+# JavaFX-version
