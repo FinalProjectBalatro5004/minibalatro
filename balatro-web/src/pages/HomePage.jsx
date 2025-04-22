@@ -69,11 +69,23 @@ const HomePage = () => {
               Sign In
             </button>
           </div>
+          
+          {/* Reference Citation */}
+          <div className="mt-8 text-gray-400 text-xs">
+            <p>
+              Reference: Balatro. (n.d.). Steam Store Page. Retrieved from{" "}
+              <a 
+                href="https://store.steampowered.com/app/2379780/Balatro/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-blue-400 hover:underline"
+              >
+                https://store.steampowered.com/app/2379780/Balatro/
+              </a>
+            </p>
+          </div>
         </div>
-        
-        
       </div>
-      
     </div>
   );
 };

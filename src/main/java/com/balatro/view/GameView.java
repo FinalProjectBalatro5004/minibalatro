@@ -923,6 +923,11 @@ public class GameView extends BorderPane {
         infoLabel.getStyleClass().add("info-text");
         infoLabel.setWrapText(true);
         infoLabel.setAlignment(Pos.CENTER);
+
+        Label referenceLabel = new Label("Reference: Balatro. (n.d.). Steam Store Page. Retrieved from https://store.steampowered.com/app/2379780/Balatro/");
+        referenceLabel.getStyleClass().add("info-text");
+        referenceLabel.setWrapText(true);
+        referenceLabel.setAlignment(Pos.CENTER);
         
         // Set Bet actions
         bet10Button.setOnAction(e -> {
@@ -941,7 +946,8 @@ public class GameView extends BorderPane {
             startGame();
         });
         
-        startScreen.getChildren().addAll(welcomeLabel, betLabel, betOptions, infoLabel);
+        // Add all components to the start screen, including the reference label
+        startScreen.getChildren().addAll(welcomeLabel, betLabel, betOptions, infoLabel, referenceLabel);
         return startScreen;
     }
     
