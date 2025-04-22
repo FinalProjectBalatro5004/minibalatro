@@ -297,24 +297,37 @@ public class Hand {
      * the type of hand is determined by the highest value of highest HandType 
      */
     public void evaluateHand() {
-        // Modified logic to allow special combinations even with fewer than 5 cards
+        // Check if the cards list is empty (no cards in hand)
         if (cards.isEmpty()) {
+            // Default to HIGH_CARD hand type since there's no valid poker hand with 0 cards
             handType = HandType.HIGH_CARD;
+            // Calculate base score by finding the highest card value
+            // For an empty hand, calculateHighCardScore() will return 0 through the .orElse(0) fallback
             baseScore = calculateHighCardScore();
+            // Set the multiplier by getting the default multiplier for HIGH_CARD (which is 1)
             multiplier = handType.getMultiplier();
+            // Exit the method immediately - no need to evaluate further since we have no cards
             return;
         }
-        
+
+        /**
+         * Hand Types Without Size Requirements:
+         * Four of a Kind: Only requires 4 matching cards (the rest don't matter)
+         * Three of a Kind: Only requires 3 matching cards
+         * Two Pair: Only requires 4 cards (2 of one rank, 2 of another)
+         * Pair: Only requires 2 matching cards
+         * High Card: Can be determined with any number of cards
+         */
         if (cards.size() >= 5 && isStraightFlush()) {
-            handType = HandType.STRAIGHT_FLUSH;
+            handType = HandType.STRAIGHT_FLUSH; // Straight Flush: Requires 5 cards in sequence of the same suit
         } else if (isFourOfAKind()) {
             handType = HandType.FOUR_OF_A_KIND;
-        } else if (cards.size() >= 5 && isFullHouse()) {
-            handType = HandType.FULL_HOUSE;
-        } else if (cards.size() >= 5 && isFlush()) {
-            handType = HandType.FLUSH;
-        } else if (cards.size() >= 5 && isStraight()) {
-            handType = HandType.STRAIGHT;
+        } else if (cards.size() >= 5 && isFullHouse()) { 
+            handType = HandType.FULL_HOUSE; // Full House: Requires 5 cards (three of one rank, two of another)
+        } else if (cards.size() >= 5 && isFlush()) { 
+            handType = HandType.FLUSH; // Flush: Requires 5 cards of the same suit
+        } else if (cards.size() >= 5 && isStraight()) { 
+            handType = HandType.STRAIGHT;  // Straight: Requires 5 cards in sequence
         } else if (isThreeOfAKind()) {
             handType = HandType.THREE_OF_A_KIND;
         } else if (isTwoPair()) {

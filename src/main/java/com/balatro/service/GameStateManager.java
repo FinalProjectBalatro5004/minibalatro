@@ -32,7 +32,7 @@ public class GameStateManager {
     private final IntegerProperty currentLevel;
     private final ObjectProperty<LevelStage> currentStage;
     private final IntegerProperty playerChips;
-    private final IntegerProperty ante;
+    private final IntegerProperty stageValue;
     private final StringProperty gamePhase;
     private final ObjectProperty<GamePhase> currentPhase;
     
@@ -46,7 +46,7 @@ public class GameStateManager {
     
     // Constants
     private static final int STARTING_CHIPS = 100;
-    private static final int INITIAL_ANTE = 5;
+    private static final int INITIAL_STAGE_VALUE = 0; // Start with 0 stage value, will be updated to 5 when game starts
     private static final int MAX_ROUNDS = 10;
     private static final int DEFAULT_MAX_HANDS = 4;  // Starting counts as 1 hand, maximum of 4 hands allowed
     private static final int DEFAULT_MAX_DISCARDS = 4;  // Maximum of 4 discards allowed
@@ -60,7 +60,7 @@ public class GameStateManager {
      */
     public enum GamePhase {
         GAME_START,        // Initial game setup
-        ROUND_SETUP,       // Setting up a new round (ante, etc.)
+        ROUND_SETUP,       // Setting up a new round (stage value, etc.)
         PLAYING_CARDS,     // Player is playing their hand
         ROUND_SCORING,     // Calculating score for the round
         ROUND_COMPLETE,    // End of round
@@ -152,7 +152,7 @@ public class GameStateManager {
         this.currentLevel = new SimpleIntegerProperty(1);
         this.currentStage = new SimpleObjectProperty<>(LevelStage.SMALL_BLIND);
         this.playerChips = new SimpleIntegerProperty(STARTING_CHIPS);
-        this.ante = new SimpleIntegerProperty(INITIAL_ANTE);
+        this.stageValue = new SimpleIntegerProperty(INITIAL_STAGE_VALUE);
         this.gamePhase = new SimpleStringProperty(GamePhase.GAME_START.toString());
         this.currentPhase = new SimpleObjectProperty<>(GamePhase.GAME_START);
         
@@ -184,8 +184,8 @@ public class GameStateManager {
         currentLevel.set(1);
         currentStage.set(LevelStage.SMALL_BLIND);
         
-        // Reset ante
-        ante.set(INITIAL_ANTE);
+        // Reset stage value
+        stageValue.set(INITIAL_STAGE_VALUE);
         
         // Reset hand and discard limits
         resetLimitsForNewStage();
@@ -237,18 +237,17 @@ public class GameStateManager {
             return;
         }
         
-        // Only deduct ante under specific conditions:
-        // 1. When the game first starts (by checking if currentRound is 1 and handsPlayedInStage is 0)
-        // 2. Or when restarting from a failed level
-        if ((currentRound.get() == 1 && handsPlayedInStage.get() == 0) || 
-            gameService.getGameState() == GameService.GameState.GAME_OVER) {
-            // Take ante from player chips
-            int currentAnte = ante.get();
-            int remainingChips = playerChips.get() - currentAnte;
+        // Only deduct stage value under specific conditions:
+        // 1. When restarting from a failed level
+        // (No longer deducting when game first starts as it's handled in setBetAmount)
+        if (gameService.getGameState() == GameService.GameState.GAME_OVER) {
+            // Take stage value from player chips
+            int currentStageValue = stageValue.get();
+            int remainingChips = playerChips.get() - currentStageValue;
             playerChips.set(remainingChips);
-            System.out.println("Ante deducted: " + currentAnte + " chips");
+            System.out.println("Stage value deducted: " + currentStageValue + " chips");
         } else {
-            System.out.println("No ante deducted - continuing to next stage");
+            System.out.println("No stage value deducted - continuing to next stage");
         }
         
         // Reset the deck first to clear any ongoing round state
@@ -300,13 +299,25 @@ public class GameStateManager {
     }
     
     /**
-     * Sets the ante amount for the game.
-     * @param amount the new ante amount (10, 50, or 100)
+     * Sets the bet amount for the game.
+     * @param amount the bet amount (10, 50, or 100)
      */
-    public void setAnteAmount(int amount) {
-        // Only allow values of 10, 50, or 100
+    public void setBetAmount(int amount) {
+        // Only allow values of 10, 50, or 100 for the bite/bet amount
         if (amount == 10 || amount == 50 || amount == 100) {
-            ante.set(amount);
+            // This value is the bite/bet amount and will get deducted from chips
+            // The actual stage value for the stage will be set based on the stage when the game starts
+            
+            // Store the bet amount
+            int betAmount = amount;
+            // But set the stage value to the appropriate value for the Small Blind stage
+            stageValue.set(5); // Small Blind stage always has stage value of 5
+            
+            // Deduct the bet amount from player chips
+            int remainingChips = STARTING_CHIPS - betAmount;
+            playerChips.set(remainingChips);
+            
+            System.out.println("Bet amount set to: " + betAmount + " chips, Stage value set to: 5 for Small Blind stage");
         }
     }
     
@@ -364,12 +375,12 @@ public class GameStateManager {
             // Generate a new Joker for the next level
             generateRandomJoker();
             
-            // Increase ante for the next level (increase ante value in advance, but don't deduct it yet)
-            int currentAnte = ante.get();
-            ante.set(currentAnte + 5);
+            // Increase stage value for the next level (increase stage value in advance, but don't deduct it yet)
+            int currentStageValue = stageValue.get();
+            stageValue.set(currentStageValue + 5);
             
-            // Award 3x the previous ante as reward for completing all stages
-            int reward = currentAnte * 3;
+            // Award 3x the previous stage value as reward for completing all stages
+            int reward = currentStageValue * 3;
             playerChips.set(playerChips.get() + reward);
             
             // Log the transition and reward
@@ -423,8 +434,8 @@ public class GameStateManager {
      * @return chips earned
      */
     private int calculateChipsEarned(int score) {
-        // Basic calculation: score divided by 10, with minimum of ante
-        int chips = Math.max(score / 10, ante.get());
+        // Basic calculation: score divided by 10, with minimum of stage value
+        int chips = Math.max(score / 10, stageValue.get());
         return chips;
     }
     
@@ -528,18 +539,18 @@ public class GameStateManager {
         return playerChips;
     }
     /**
-     * Getter for the ante.
-     * @return the ante
+     * Getter for the stage value.
+     * @return the stage value
      */
-    public int getAnte() {
-        return ante.get();
+    public int getStageValue() {
+        return stageValue.get();
     }
     /**
-     * Getter for the ante property.
-     * @return the ante property
+     * Getter for the stage value property.
+     * @return the stage value property
      */
-    public IntegerProperty anteProperty() {
-        return ante;
+    public IntegerProperty stageValueProperty() {
+        return stageValue;
     }
     /**
      * Getter for the game phase.

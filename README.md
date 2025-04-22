@@ -26,7 +26,7 @@ Mini-Balatro reimagines the popular roguelike deck-building game with a focus on
 - **Game Progression**:
   - Three levels with three stages each (Small Blind, Big Blind, The Hook)
   - Increasing score targets for each stage
-  - Chip management with ante and rewards
+  - Chip management with Stage Value system and rewards
   - Limits on hands played and discards per stage
 
 - **Enhanced User Interface**:
@@ -325,7 +325,7 @@ src/
      - `startNewGame()` - Starts a new game
      - `startNewRound()` - Starts a new round
      - `recordDiscard()` - Records a discard action
-     - `setAnteAmount(int amount)` - Sets the ante amount
+     - `setBetAmount(int amount)` - Sets the bet amount (formerly setAnteAmount)
      - `resetPlayerChips()` - Resets player's chips to starting amount
      - `completeRound()` - Completes the current round
      - `setGamePhase(GamePhase phase)` - Sets the current game phase
@@ -341,8 +341,8 @@ src/
      - `currentStageProperty()` - Gets the current stage property
      - `getPlayerChips()` - Gets the player's chips
      - `playerChipsProperty()` - Gets the player chips property
-     - `getAnte()` - Gets the current ante amount
-     - `anteProperty()` - Gets the ante property
+     - `getStageValue()` - Gets the current stage value
+     - `stageValueProperty()` - Gets the stage value property
      - `getGamePhase()` - Gets the current game phase
      - `gamePhaseProperty()` - Gets the game phase property
      - `getCurrentPhase()` - Gets the current phase enum

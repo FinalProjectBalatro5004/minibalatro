@@ -19,7 +19,7 @@ Mini-Balatro Web is a web-based version of the Balatro card game, developed with
 - **Game Progression**
   - Three levels with three stages each (Small Blind, Big Blind, The Hook)
   - Increasing score targets for each stage
-  - Chip management with bite/ante system and rewards
+  - Chip management with Stage Value system and rewards
   - Limits on hands played and discards per stage
 
 - **Enhanced User Interface**
@@ -160,11 +160,11 @@ Provides card hand evaluation functionality, directly adapted from Hand.java.
 
 ## Game Mechanics
 
-### Bite/Ante System
+### Stage Value System
 
-- Players start with 100 chips and select a bite amount (10, 50, or 100)
-- The selected bite is deducted from their starting chips
-- When completing a level, players earn 4x their bite amount
+- Players start with 100 chips and select a Stage Value amount (10, 50, or 100)
+- The selected Stage Value is deducted from their starting chips
+- When completing a level, players earn 4x their Stage Value amount
 
 ### Hand Evaluation
 

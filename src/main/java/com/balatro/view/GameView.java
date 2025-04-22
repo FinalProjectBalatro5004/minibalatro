@@ -42,7 +42,7 @@ public class GameView extends BorderPane {
     private Label gamePhaseLabel;
     private Label roundLabel;
     private Label chipsLabel;
-    private Label anteLabel;
+    private Label stageValueLabel;
     private Label scoreLabel;
     private Label multiplierLabel;
     private Label handTypeLabel;
@@ -253,30 +253,34 @@ public class GameView extends BorderPane {
         infoGrid.add(discardUsedTitle, 6, 1);
         infoGrid.add(discardLimitLabel, 7, 1);
         
-        // Third row: Chips, Ante, Hand
+        // Third row: Chips, Hand
         // Chips
         Label chipsTitle = new Label("Chips:");
         chipsTitle.getStyleClass().add("info-label");
         chipsLabel = new Label();
-        chipsLabel.getStyleClass().addAll("info-label", "chips-value");
+        chipsLabel.getStyleClass().addAll("info-label", "chips-label");
         infoGrid.add(chipsTitle, 0, 2);
         infoGrid.add(chipsLabel, 1, 2);
         
-        // Ante
-        Label anteTitle = new Label("Ante:");
-        anteTitle.getStyleClass().add("info-label");
-        anteLabel = new Label();
-        anteLabel.getStyleClass().addAll("info-label", "ante-value");
-        infoGrid.add(anteTitle, 2, 2);
-        infoGrid.add(anteLabel, 3, 2);
+        // The Bet and Stage Value information will be updated when the player selects a bet amount
+        // We'll create the Stage Value labels but don't add them to the grid yet
+        stageValueLabel = new Label();
+        stageValueLabel.getStyleClass().addAll("info-label", "ante-label");
+        
+        // Tooltip for Stage Value to explain what it means
+        javafx.scene.control.Tooltip stageTip = new javafx.scene.control.Tooltip(
+            "Stage Value increases as you progress through game stages.\n" +
+            "It affects reward calculations and represents the current difficulty level."
+        );
+        javafx.scene.control.Tooltip.install(stageValueLabel, stageTip);
         
         // Hand Type
         Label handTypeTitle = new Label("Hand:");
         handTypeTitle.getStyleClass().add("info-label");
         handTypeLabel = new Label();
         handTypeLabel.getStyleClass().add("info-label");
-        infoGrid.add(handTypeTitle, 4, 2);
-        infoGrid.add(handTypeLabel, 5, 2);
+        infoGrid.add(handTypeTitle, 6, 2);
+        infoGrid.add(handTypeLabel, 7, 2);
         
         // Round - Added to UI but hidden to maintain compatibility
         roundLabel = new Label();
@@ -490,7 +494,8 @@ public class GameView extends BorderPane {
         // Bind roundLabel but don't display in UI, maintain code compatibility
         roundLabel.textProperty().bind(Bindings.convert(gameManager.currentRoundProperty()));
         chipsLabel.textProperty().bind(Bindings.convert(gameManager.playerChipsProperty()));
-        anteLabel.textProperty().bind(Bindings.convert(gameManager.anteProperty()));
+        // We'll set stageValueLabel text manually in startGame() and then bind it
+        //stageValueLabel.textProperty().bind(Bindings.convert(gameManager.stageValueProperty()));
         scoreLabel.textProperty().bind(Bindings.convert(gameService.scoreProperty()));
         handTypeLabel.textProperty().bind(gameService.currentHandTypeDisplayProperty());
         levelLabel.textProperty().bind(Bindings.convert(gameManager.currentLevelProperty()));
@@ -620,9 +625,9 @@ public class GameView extends BorderPane {
                 // Wait for notification (500ms fade in + 3000ms pause + 500ms fade out)
                 PauseTransition waitForNotification = new PauseTransition(Duration.millis(4000));
                 waitForNotification.setOnFinished(e -> {
-                    // Check if player has enough chips for the next round's ante
-                    if (gameManager.getPlayerChips() < gameManager.getAnte()) {
-                        notificationText.set("You don't have enough chips for the ante!\nGame Over!");
+                    // Check if player has enough chips for the next round's stage value
+                    if (gameManager.getPlayerChips() < gameManager.getStageValue()) {
+                        notificationText.set("You don't have enough chips for the stage value!\nGame Over!");
                         
                         // Wait before restarting completely
                         PauseTransition waitBeforeRestart = new PauseTransition(Duration.millis(4000));
@@ -643,8 +648,8 @@ public class GameView extends BorderPane {
                     if (gameService.getScore() < gameService.getTargetScore()) {
                         // Show notification about failing the stage
                         notificationText.set("Hand limit reached!\nFailed to reach the target score of " + 
-                                            gameService.getTargetScore() + ".\nYou lost your ante of " +
-                                            gameManager.getAnte() + " chips!\nGame Over!");
+                                            gameService.getTargetScore() + ".\nYou lost your stage value of " +
+                                            gameManager.getStageValue() + " chips!\nGame Over!");
                         
                         // Wait before restarting the game
                         PauseTransition waitBeforeRestart = new PauseTransition(Duration.millis(4000));
@@ -892,68 +897,103 @@ public class GameView extends BorderPane {
         Label welcomeLabel = new Label("Welcome to Balatro!");
         welcomeLabel.getStyleClass().add("welcome-label");
         
-        // Add ante selection options
-        Label anteLabel = new Label("Select your Ante amount:");
-        anteLabel.getStyleClass().add("info-label");
+        // Change "Ante" to "Bet" for clarity
+        Label betLabel = new Label("Select your Bet amount:");
+        betLabel.getStyleClass().add("info-label");
         
-        HBox anteOptions = new HBox(20);
-        anteOptions.setAlignment(Pos.CENTER);
+        HBox betOptions = new HBox(20);
+        betOptions.setAlignment(Pos.CENTER);
         
-        Button ante10Button = new Button("10 Chips");
-        Button ante50Button = new Button("50 Chips");
-        Button ante100Button = new Button("100 Chips");
+        Button bet10Button = new Button("10 Chips");
+        Button bet50Button = new Button("50 Chips");
+        Button bet100Button = new Button("100 Chips");
         
-        ante10Button.getStyleClass().add("ante-button");
-        ante50Button.getStyleClass().add("ante-button");
-        ante100Button.getStyleClass().add("ante-button");
+        bet10Button.getStyleClass().add("ante-button");
+        bet50Button.getStyleClass().add("ante-button");
+        bet100Button.getStyleClass().add("ante-button");
         
-        anteOptions.getChildren().addAll(ante10Button, ante50Button, ante100Button);
+        // Add color styling to match web version
+        bet10Button.setStyle("-fx-background-color: linear-gradient(to right, #b91c1c, #7f1d1d);");
+        bet50Button.setStyle("-fx-background-color: linear-gradient(to right, #15803d, #166534);");
+        bet100Button.setStyle("-fx-background-color: linear-gradient(to right, #7e22ce, #581c87);");
         
-        Label infoLabel = new Label("Note: You will win 3x your Ante if you complete all stages.\nIf you fail, you will lose your Ante and start over.");
+        betOptions.getChildren().addAll(bet10Button, bet50Button, bet100Button);
+        
+        Label infoLabel = new Label("Note: Your bet amount will be deducted from your initial 100 chips.\nWhen you complete a level, you'll receive 10x your bet amount as a reward!\nStage Values are difficulty indicators that increase as you progress through the game.");
         infoLabel.getStyleClass().add("info-text");
         infoLabel.setWrapText(true);
         infoLabel.setAlignment(Pos.CENTER);
         
-        // Set Ante actions
-        ante10Button.setOnAction(e -> {
-            gameManager.setAnteAmount(10);
+        // Set Bet actions
+        bet10Button.setOnAction(e -> {
+            // Set ante to 0 initially, it will be set to the proper value (5) when the game starts
+            gameManager.setBetAmount(10);
             startGame();
         });
         
-        ante50Button.setOnAction(e -> {
-            gameManager.setAnteAmount(50);
+        bet50Button.setOnAction(e -> {
+            gameManager.setBetAmount(50);
             startGame();
         });
         
-        ante100Button.setOnAction(e -> {
-            gameManager.setAnteAmount(100);
+        bet100Button.setOnAction(e -> {
+            gameManager.setBetAmount(100);
             startGame();
         });
         
-        startScreen.getChildren().addAll(welcomeLabel, anteLabel, anteOptions, infoLabel);
+        startScreen.getChildren().addAll(welcomeLabel, betLabel, betOptions, infoLabel);
         return startScreen;
     }
     
     /**
-     * Starts the game with the selected ante amount.
+     * Starts the game with the selected bet amount.
      */
     private void startGame() {
-        // Check if player has enough chips for the selected ante
-        if (gameManager.getPlayerChips() < gameManager.getAnte()) {
-            // Show warning message
-            notificationText.set("You don't have enough chips!\nStarting a new game with 100 chips.");
-            showNotification();
-            
-            // Reset player chips to default
-            gameManager.resetPlayerChips();
-            
-            // Delay starting the game until notification is dismissed
-            PauseTransition waitForNotification = new PauseTransition(Duration.millis(4000));
-            waitForNotification.setOnFinished(e -> actuallyStartGame());
-            waitForNotification.play();
-        } else {
-            actuallyStartGame();
-        }
+        // Always have enough chips since the chips were adjusted in setBetAmount
+        actuallyStartGame();
+        
+        // Now that the bet amount has been selected, add the Bet and Stage Value fields to the info grid
+        // Get the GridPane from the top panel (first child is the title, second is the grid)
+        VBox topPanel = (VBox) getTop();
+        GridPane infoGrid = (GridPane) topPanel.getChildren().get(1);
+        
+        // Create and add the Bet labels now that we have a value
+        Label betTitle = new Label("Bet:");
+        betTitle.getStyleClass().add("info-label");
+        Label betLabel = new Label();
+        betLabel.getStyleClass().addAll("info-label", "bet-label");
+        
+        // Calculate the bet amount based on the difference between starting chips and current chips
+        int betAmount = 100 - gameManager.getPlayerChips();
+        betLabel.setText(String.valueOf(betAmount));
+        
+        // Add the bet fields to the grid at positions 2,2 and 3,2
+        infoGrid.add(betTitle, 2, 2);
+        infoGrid.add(betLabel, 3, 2);
+        
+        // Create and add the Stage Value labels
+        Label stageValueTitle = new Label("Stage Value:");
+        stageValueTitle.getStyleClass().add("info-label");
+        
+        // Add the Stage Value tooltip to the title
+        javafx.scene.control.Tooltip stageTip = new javafx.scene.control.Tooltip(
+            "Stage Value increases as you progress through game stages.\n" +
+            "It affects reward calculations and represents the current difficulty level."
+        );
+        javafx.scene.control.Tooltip.install(stageValueTitle, stageTip);
+        
+        // Update the UI to reflect the correct stage value (which should be 5 for Small Blind)
+        stageValueLabel.setText(String.valueOf(gameManager.getStageValue()));
+        
+        // Add the Stage Value fields to the grid at positions 4,2 and 5,2
+        infoGrid.add(stageValueTitle, 4, 2);
+        infoGrid.add(stageValueLabel, 5, 2);
+        
+        // Now set up binding for the stageValueLabel
+        stageValueLabel.textProperty().bind(Bindings.convert(gameManager.stageValueProperty()));
+        
+        // Update the chips display to reflect the deducted bet amount
+        chipsLabel.setText(String.valueOf(gameManager.getPlayerChips()));
     }
     
     /**

@@ -82,7 +82,7 @@ const GameBoard = () => {
   const [round, setRound] = useState(1);
   const [level, setLevel] = useState(1);
   const [stage, setStage] = useState('Small Blind');
-  const [ante, setAnte] = useState(5);
+  const [ante, setAnte] = useState(0);
   const [chips, setChips] = useState(100);
   const [biteAmount, setBiteAmount] = useState(0);
   const [gamePhase, setGamePhase] = useState('Bite Selection');
@@ -205,7 +205,7 @@ const GameBoard = () => {
     // Don't start new game automatically, wait for bite selection
   }, []);
   
-  // 初始化时从数据库加载最高chips
+  // initialize user data
   useEffect(() => {
     const loadUserData = async () => {
       try {
@@ -231,9 +231,6 @@ const GameBoard = () => {
     
     // Deduct bite from starting chips (100)
     setChips(100 - amount);
-    
-    // Set ante based on bite
-    setAnte(amount);
     
     // Start the game with the selected bite
     startNewGame();
@@ -268,8 +265,10 @@ const GameBoard = () => {
     const firstStage = gameStages.length > 0 ? gameStages[0] : { displayName: 'Small Blind', level: 1, ante: 5 };
     setStage(firstStage.displayName);
     
+    // Set the ante based on the first stage
+    setAnte(firstStage.ante);
+    
     // Don't reset chips here as we've already set them in handleBiteSelection
-    // Don't reset ante here as we've already set it in handleBiteSelection
     
     setDiscardCount(0);
     setHandCount(0);
@@ -907,10 +906,21 @@ const GameBoard = () => {
                   <br />When you complete a level, you'll receive 10x your bite amount as a reward!
                 </p>
                 
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="bg-gray-700 p-4 rounded-lg">
+                    <p className="text-gray-400 text-sm">Current Chips</p>
+                    <p className="text-green-400 text-2xl font-bold">100</p>
+                  </div>
+                  <div className="bg-gray-700 p-4 rounded-lg">
+                    <p className="text-gray-400 text-sm">Current Ante</p>
+                    <p className="text-red-400 text-2xl font-bold">0</p>
+                  </div>
+                </div>
+                
                 <div className="flex justify-center gap-6 mb-8">
                   <button 
                     onClick={() => handleBiteSelection(10)}
-                    className="px-6 py-4 bg-gradient-to-r from-blue-700 to-blue-900 hover:from-blue-600 hover:to-blue-800 rounded-lg font-bold text-xl transition-all shadow-lg"
+                    className="px-6 py-4 bg-gradient-to-r from-red-700 to-red-900 hover:from-red-600 hover:to-red-800 rounded-lg font-bold text-xl transition-all shadow-lg"
                   >
                     10 Chips
                   </button>
