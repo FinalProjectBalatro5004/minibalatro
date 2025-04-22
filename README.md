@@ -640,9 +640,9 @@ To run the web version of the application locally, follow these steps:
    cd minibalatro
    ```
 
-2. Run the Spring Boot application using Maven:
+2. Run the application using Maven:
    ```bash
-   ./mvnw spring-boot:run
+   ./mvnw javafx:run
    ```
 
 3. The API will be available at `http://localhost:8080`

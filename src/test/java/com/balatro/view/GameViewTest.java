@@ -59,7 +59,7 @@ class GameViewTest {
         when(mockGameManager.getCurrentPhase()).thenReturn(GameStateManager.GamePhase.GAME_START);
         when(mockGameManager.getCurrentStage()).thenReturn(GameStateManager.LevelStage.SMALL_BLIND);
         when(mockGameManager.getPlayerChips()).thenReturn(100);
-        when(mockGameManager.getAnte()).thenReturn(5);
+        when(mockGameManager.getStageValue()).thenReturn(5);
         when(mockGameManager.getCurrentRound()).thenReturn(1);
         when(mockGameManager.getCurrentLevel()).thenReturn(1);
         

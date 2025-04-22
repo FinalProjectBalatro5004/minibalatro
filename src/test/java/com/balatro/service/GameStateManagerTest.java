@@ -51,7 +51,7 @@ class GameStateManagerTest {
         
         // Check initial player chips and ante
         assertEquals(100, gameStateManager.getPlayerChips(), "Initial player chips should be 100");
-        assertEquals(5, gameStateManager.getAnte(), "Initial ante should be 5");
+        assertEquals(0, gameStateManager.getStageValue(), "Initial stage value should be 0");
         
         // Check initial limits
         assertEquals(0, gameStateManager.getHandsPlayedInStage(), 

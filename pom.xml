@@ -116,6 +116,12 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<jvmArguments>
+						--module-path="${project.build.directory}/dependency"
+						--add-modules=javafx.controls,javafx.fxml,javafx.graphics
+					</jvmArguments>
+				</configuration>
 			</plugin>
 			<!-- JavaFX Maven Plugin -->
 			<plugin>
@@ -155,5 +161,38 @@
 			</plugin>
 		</plugins>
 	</build>
+
+	<profiles>
+		<profile>
+			<id>run-app</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.springframework.boot</groupId>
+						<artifactId>spring-boot-maven-plugin</artifactId>
+						<configuration>
+							<mainClass>com.balatro.BalatroGame</mainClass>
+							<layout>JAR</layout>
+							<jvmArguments>
+								--add-opens=java.base/java.lang=ALL-UNNAMED
+								--add-opens=java.base/java.util=ALL-UNNAMED
+							</jvmArguments>
+							<addResources>true</addResources>
+							<excludes>
+								<exclude>
+									<groupId>org.projectlombok</groupId>
+									<artifactId>lombok</artifactId>
+								</exclude>
+							</excludes>
+							<classifier>exec</classifier>
+							<arguments>
+								<argument>--nothreads</argument>
+							</arguments>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 
 </project>
